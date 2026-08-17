@@ -13,3 +13,10 @@ Imperative do's-and-don'ts a Voice Profile carries (e.g. "never use profanity") 
 
 **Examples**:
 Optional few-shot `{input, output}` pairs on a Voice Profile that demonstrate the voice in action, used to steer generation quality.
+
+**Mode**:
+Which of the two core operations the engine performs — `rewrite` (transform existing text) or `generate` (produce new text from an instruction). The only mode axis; context, streaming, and display are separate, orthogonal concerns.
+_Avoid_: Operation, action
+
+**Context**:
+An optional freeform string carrying format/length hints for a rewrite or generate call (e.g. "formal business email", "twitter reply, keep under 280 chars"), independent of the Voice Profile in use.
