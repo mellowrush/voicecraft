@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>PROTOTYPE — Prompt construction</title>
+<style>
+  :root { --accent: #7c5cff; --bg: #0f0f14; --panel: #17171f; --text: #e8e8ee; --muted: #8a8a9a; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 40px 24px 80px; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+    color: #1a1a1a; background: #ffcc66; padding: 2px 8px; border-radius: 4px; margin-bottom: 16px;
+  }
+  .intro { color: var(--muted); margin-bottom: 28px; max-width: 640px; }
+  .panel {
+    background: var(--panel); border: 1px solid #26262f; border-radius: 10px;
+    padding: 20px; margin-bottom: 20px;
+  }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 0 0 14px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; margin-top: 12px; }
+  label:first-child { margin-top: 0; }
+  select, textarea, input[type=text] {
+    width: 100%; background: #0f0f14; border: 1px solid #2e2e3a; color: var(--text);
+    border-radius: 6px; padding: 8px 10px; font-size: 14px; font-family: inherit;
+  }
+  textarea { resize: vertical; min-height: 44px; }
+  .row { display: flex; gap: 16px; }
+  .row > * { flex: 1; }
+  .checks { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; }
+  .checks label { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 13px; color: var(--text); }
+  .checks input { width: auto; }
+  pre.prompt {
+    white-space: pre-wrap; background: #0f0f14; border: 1px solid #2e2e3a; border-radius: 6px;
+    padding: 16px; font-size: 13px; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    color: #d6d6e0; max-height: 480px; overflow: auto;
+  }
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+  .tab {
+    background: #1e1e28; border: 1px solid #2e2e3a; color: var(--muted); font-size: 13px;
+    padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  }
+  .tab.active { background: var(--accent); color: white; border-color: var(--accent); }
+  .scenario-desc { color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+  .steps { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  button.step {
+    background: #1e1e28; border: 1px solid var(--accent); color: var(--text); font-size: 13px;
+    padding: 8px 14px; border-radius: 6px; cursor: pointer;
+  }
+  button.step:hover { background: var(--accent); }
+  button.step.done { opacity: 0.4; border-color: #2e2e3a; }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">PROTOTYPE — throwaway</span>
+  <h1>Prompt construction</h1>
+  <p class="intro">
+    Question: given a <code>VoiceProfile</code> + <code>mode</code> (rewrite|generate) + optional <code>context</code> + <code>text</code>,
+    what should the actual prompt string handed to the Provider look like? Adjust the free-play controls below, or step through a guided
+    scenario, and react to the rendered prompt — is this the shape a real Provider call should send?
+  </p>
+
+  <div class="panel">
+    <h2>Free play</h2>
+    <label>Voice profile</label>
+    <select id="profileSelect"></select>
+
+    <div class="row">
+      <div>
+        <label>Mode</label>
+        <select id="modeSelect">
+          <option value="rewrite">rewrite</option>
+          <option value="generate">generate</option>
+        </select>
+      </div>
+      <div>
+        <label>Context (optional)</label>
+        <input type="text" id="contextInput" placeholder="e.g. formal business email" />
+      </div>
+    </div>
+
+    <label id="textLabel">Text to rewrite</label>
+    <textarea id="textInput"></textarea>
+
+    <div class="checks">
+      <label><input type="checkbox" id="includeTags" checked /> include tags</label>
+      <label><input type="checkbox" id="includeExamples" checked /> include examples</label>
+      <label><input type="checkbox" id="includeConstraints" checked /> include constraints</label>
+      <label><input type="checkbox" id="includeLanguage" checked /> include language</label>
+      <label><input type="checkbox" id="includeContext" checked /> include context</label>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Guided walkthroughs</h2>
+    <div class="tabs" id="tabs"></div>
+    <div class="scenario-desc" id="scenarioDesc"></div>
+    <div class="steps" id="steps"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Rendered prompt (what the Provider function receives)</h2>
+    <pre class="prompt" id="output"></pre>
+    <div class="meta" id="metaInfo"></div>
+  </div>
+</div>
+
+<script>
+  // ---- Pure module: this is the bit that lifts into the real codebase ----
+  // buildPrompt: VoiceProfile + mode + context + text -> prompt string.
+  // No DOM, no globals referenced — a pure function over a plain data type.
+
+  function buildPrompt(request) {
+    const { profile, mode, context, text } = request;
+    const lines = [];
+
+    lines.push(`You are writing in the voice of "${profile.name}".`);
+    lines.push(profile.description);
+
+    if (profile.tags && profile.tags.length > 0) {
+      lines.push(`Style: ${profile.tags.join(", ")}.`);
+    }
+
+    if (profile.constraints && profile.constraints.length > 0) {
+      lines.push("Rules you must follow:");
+      for (const c of profile.constraints) lines.push(`- ${c}`);
+    }
+
+    if (profile.examples && profile.examples.length > 0) {
+      lines.push("Examples of this voice in action:");
+      for (const ex of profile.examples) {
+        lines.push(`Input: ${ex.input}`);
+        lines.push(`Output: ${ex.output}`);
+      }
+    }
+
+    if (profile.language) {
+      lines.push(`Respond in ${profile.language}.`);
+    }
+
+    if (context) {
+      lines.push(`Context: ${context}`);
+    }
+
+    if (mode === "rewrite") {
+      lines.push("Rewrite the following text in this voice. Preserve its meaning and intent, but fully commit to the voice above.");
+      lines.push(`Text to rewrite:\n${text}`);
+    } else {
+      lines.push("Write new text in this voice, following the instruction below.");
+      lines.push(`Instruction:\n${text}`);
+    }
+
+    return lines.join("\n\n");
+  }
+
+  // ---- Example throwaway VoiceProfiles (from Voice profile schema, issue #2) ----
+
+  const profiles = {
+    "noir-detective": {
+      id: "noir-detective",
+      name: "Noir Detective",
+      description: "A world-weary 1940s private eye narrating in clipped, cynical prose. Short sentences. Similes drawn from rain, cigarettes, and bad luck.",
+      tags: ["cynical", "terse", "period"],
+      examples: [
+        { input: "The meeting got rescheduled to tomorrow.", output: "The meeting slipped a day, like everything else in this rotten town." }
+      ],
+      constraints: ["never break the noir voice with modern slang", "keep sentences short"],
+    },
+    "encouraging-coach": {
+      id: "encouraging-coach",
+      name: "Encouraging Coach",
+      description: "A warm, upbeat coach who reframes setbacks as progress and always ends on a forward-looking note.",
+      tags: ["warm", "upbeat"],
+      constraints: ["never use guilt or shame language"],
+      language: "en",
+    },
+    "bare-minimum": {
+      id: "bare-minimum",
+      name: "Plainspoken",
+      description: "Write in plain, direct, unadorned English.",
+    },
+  };
+
+  // ---- Page shell (throwaway) ----
+
+  const profileSelect = document.getElementById("profileSelect");
+  const modeSelect = document.getElementById("modeSelect");
+  const contextInput = document.getElementById("contextInput");
+  const textInput = document.getElementById("textInput");
+  const textLabel = document.getElementById("textLabel");
+  const output = document.getElementById("output");
+  const metaInfo = document.getElementById("metaInfo");
+  const includeTags = document.getElementById("includeTags");
+  const includeExamples = document.getElementById("includeExamples");
+  const includeConstraints = document.getElementById("includeConstraints");
+  const includeLanguage = document.getElementById("includeLanguage");
+  const includeContext = document.getElementById("includeContext");
+
+  for (const key of Object.keys(profiles)) {
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = profiles[key].name;
+    profileSelect.appendChild(opt);
+  }
+
+  function currentRequest() {
+    const base = profiles[profileSelect.value];
+    const profile = { ...base };
+    if (!includeTags.checked) delete profile.tags;
+    if (!includeExamples.checked) delete profile.examples;
+    if (!includeConstraints.checked) delete profile.constraints;
+    if (!includeLanguage.checked) delete profile.language;
+
+    const mode = modeSelect.value;
+    const context = includeContext.checked ? contextInput.value : "";
+    const text = textInput.value;
+
+    return { profile, mode, context, text };
+  }
+
+  function render() {
+    textLabel.textContent = modeSelect.value === "rewrite" ? "Text to rewrite" : "Instruction (what to write)";
+    const req = currentRequest();
+    const prompt = buildPrompt(req);
+    output.textContent = prompt;
+    metaInfo.textContent = `${prompt.length} chars — profile: ${req.profile.name}, mode: ${req.mode}`;
+  }
+
+  [profileSelect, modeSelect, contextInput, textInput, includeTags, includeExamples, includeConstraints, includeLanguage, includeContext]
+    .forEach(el => { el.addEventListener("input", render); el.addEventListener("change", render); });
+
+  // ---- Guided scenarios ----
+
+  const scenarios = [
+    {
+      name: "Noir rewrite, full profile",
+      desc: "A fully-specified profile (tags, examples, constraints) rewriting a mundane sentence. Watch how much scaffolding surrounds the actual text.",
+      steps: [
+        { label: "Select Noir Detective", apply: () => { profileSelect.value = "noir-detective"; includeTags.checked = includeExamples.checked = includeConstraints.checked = true; includeLanguage.checked = includeContext.checked = false; } },
+        { label: "Set mode: rewrite", apply: () => { modeSelect.value = "rewrite"; } },
+        { label: "Set text", apply: () => { textInput.value = "Can you send over the quarterly report by Friday?"; } },
+      ],
+    },
+    {
+      name: "Coach generate, with context",
+      desc: "Generate mode (no source text, just an instruction) plus a context hint, with language set.",
+      steps: [
+        { label: "Select Encouraging Coach", apply: () => { profileSelect.value = "encouraging-coach"; includeTags.checked = includeConstraints.checked = includeLanguage.checked = true; includeExamples.checked = false; includeContext.checked = true; } },
+        { label: "Set mode: generate", apply: () => { modeSelect.value = "generate"; } },
+        { label: "Set context", apply: () => { contextInput.value = "a short encouraging text message to a friend who bombed a job interview"; } },
+        { label: "Set instruction", apply: () => { textInput.value = "Write something to cheer them up and help them see the next step."; } },
+      ],
+    },
+    {
+      name: "Minimal profile, edge case",
+      desc: "The bare-minimum-required-fields case: just id/name/description, no tags/examples/constraints/language/context. Does the prompt still read sensibly, or does it feel thin?",
+      steps: [
+        { label: "Select Plainspoken", apply: () => { profileSelect.value = "bare-minimum"; includeTags.checked = includeExamples.checked = includeConstraints.checked = includeLanguage.checked = includeContext.checked = false; contextInput.value = ""; } },
+        { label: "Set mode: rewrite", apply: () => { modeSelect.value = "rewrite"; } },
+        { label: "Set text", apply: () => { textInput.value = "We regret to inform you that your application was not successful at this time."; } },
+      ],
+    },
+  ];
+
+  const tabsEl = document.getElementById("tabs");
+  const descEl = document.getElementById("scenarioDesc");
+  const stepsEl = document.getElementById("steps");
+  let activeScenario = 0;
+  let stepIndex = 0;
+
+  function renderScenario() {
+    tabsEl.innerHTML = "";
+    scenarios.forEach((s, i) => {
+      const t = document.createElement("div");
+      t.className = "tab" + (i === activeScenario ? " active" : "");
+      t.textContent = s.name;
+      t.onclick = () => { activeScenario = i; stepIndex = 0; renderScenario(); };
+      tabsEl.appendChild(t);
+    });
+
+    const scenario = scenarios[activeScenario];
+    descEl.textContent = scenario.desc;
+
+    stepsEl.innerHTML = "";
+    scenario.steps.forEach((step, i) => {
+      const b = document.createElement("button");
+      b.className = "step" + (i < stepIndex ? " done" : "");
+      b.textContent = `${i + 1}. ${step.label}`;
+      b.disabled = i !== stepIndex;
+      b.onclick = () => {
+        step.apply();
+        stepIndex++;
+        render();
+        renderScenario();
+      };
+      stepsEl.appendChild(b);
+    });
+  }
+
+  renderScenario();
+  render();
+</script>
+</body>
+</html>
