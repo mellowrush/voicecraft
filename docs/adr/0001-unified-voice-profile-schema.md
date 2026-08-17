@@ -1,0 +1,3 @@
+# Unified schema for predefined and custom Voice Profiles
+
+Predefined (built-in) and custom (user-authored) voices both conform to the same `VoiceProfile` schema — there is no separate type, no provenance/source field, and no schema-level distinction between them. We considered adding a `source: 'predefined' | 'custom'` discriminant but rejected it: which store a profile came from is a storage/UI concern, not a property of the voice itself, and a discriminant would tempt future code into branching engine behavior on it. Anyone reasonably expects built-in content to be modeled differently from user content, so this is recorded to stop that assumption from creeping back in.
