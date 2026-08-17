@@ -1,0 +1,3 @@
+# Core defines no injected persistence interface for Voice Profiles
+
+Unlike the `Provider` (the AI backend), which core must call and therefore abstracts behind an injected interface, core never itself reads or writes a `VoiceProfile` — `generate()` simply receives one as a value. Persistence is left entirely outside core's contract: apps load and save profiles however they want (localStorage, a file, extension storage APIs) and pass the resulting `VoiceProfile` values in. We considered mirroring the `Provider` pattern with an injected `Storage` interface for symmetry, but rejected it — core has no operation that needs to read or write a profile, so an injected interface for something core never does would be abstraction without a use.
