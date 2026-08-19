@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voicecraft — Global Hotkey Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Inter:wght@400;450;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-iris-blue: #3161df;
+    --color-cobalt: #3e79ea;
+    --color-mint-pulse: #89ecb0;
+    --color-midnight-iris: #2c65d3;
+    --color-ink: #272c30;
+    --color-graphite: #60737a;
+    --color-slate-mist: #7b8e95;
+    --color-dove-gray: #a6b4ba;
+    --color-pale-slate: #e3e8ea;
+    --color-lavender-mist: #f0f5fe;
+    --color-pure-white: #ffffff;
+
+    --font-display: 'Playfair Display', 'Selecta', Georgia, serif;
+    --font-ui: 'Inter', 'Suisse Intl', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Geist Mono', ui-monospace, monospace;
+
+    --radius-md: 6px;
+    --radius-full: 9999px;
+    --shadow-subtle-2: rgba(63,70,75,0.1) 0px 1px 3px 0px, rgba(63,70,75,0.1) 0px 0px 0px 1px;
+    --shadow-xl: rgba(63,70,75,0.1) 0px 21px 44px -32px, rgba(39,44,48,0.2) 0px 26px 30px -23px, rgba(39,44,48,0.05) 0px 14px 40px 0px, rgba(39,44,48,0.08) 0px 0px 0px 1px;
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: var(--font-ui);
+    color: var(--color-ink);
+    background: linear-gradient(160deg, #dbe6fb, #f0f5fe 45%, #e9f0fb);
+    height: 100vh;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ---------- Onboarding screen ---------- */
+  #onboarding {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    z-index: 50;
+    background: rgba(240,245,254,0.7);
+    backdrop-filter: blur(6px);
+    transition: opacity 0.5s var(--ease);
+  }
+  #onboarding.fade-out { opacity: 0; pointer-events: none; }
+  .onboard-card {
+    width: 380px;
+    background: var(--color-pure-white);
+    border-radius: 10px;
+    box-shadow: var(--shadow-xl);
+    padding: 28px;
+    text-align: center;
+  }
+  .onboard-icon {
+    width: 44px; height: 44px;
+    margin: 0 auto 16px;
+    border-radius: var(--radius-full);
+    background: var(--color-lavender-mist);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .onboard-title { font-size: 17px; font-weight: 600; margin: 0 0 8px; }
+  .onboard-body { font-size: 13px; color: var(--color-graphite); line-height: 1.55; margin: 0 0 20px; }
+  .onboard-steps { text-align: left; margin: 0 0 20px; padding: 0; list-style: none; }
+  .onboard-steps li {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 12.5px; color: var(--color-ink); margin-bottom: 10px; line-height: 1.4;
+  }
+  .step-num {
+    flex-shrink: 0; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--color-lavender-mist); color: var(--color-iris-blue);
+    font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 5px 12px; border-radius: var(--radius-full);
+    background: var(--color-pale-slate); color: var(--color-graphite);
+    margin-bottom: 18px; transition: background 0.3s var(--ease), color 0.3s var(--ease);
+  }
+  .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--color-dove-gray); transition: background 0.3s var(--ease); }
+  .status-pill.granted { background: rgba(137,236,176,0.25); color: #1f7a4d; }
+  .status-pill.granted .dot { background: var(--color-mint-pulse); }
+
+  .btn-primary {
+    width: 100%; background: var(--color-cobalt); color: white; border: none;
+    font-size: 13px; font-weight: 500; padding: 10px; border-radius: var(--radius-full);
+    cursor: pointer; margin-bottom: 8px; transition: background 0.15s var(--ease), transform 0.1s var(--ease);
+  }
+  .btn-primary:hover { background: var(--color-midnight-iris); }
+  .btn-primary:active { transform: scale(0.98); }
+  .btn-secondary {
+    width: 100%; background: transparent; color: var(--color-graphite); border: 1px solid var(--color-pale-slate);
+    font-size: 13px; font-weight: 500; padding: 9px; border-radius: var(--radius-full); cursor: pointer;
+    transition: border-color 0.15s var(--ease), color 0.15s var(--ease);
+  }
+  .btn-secondary:hover { border-color: var(--color-iris-blue); color: var(--color-iris-blue); }
+
+  /* ---------- Menu bar ---------- */
+  .menubar {
+    position: fixed; top: 0; left: 0; right: 0; height: 26px;
+    background: rgba(255,255,255,0.7); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--color-pale-slate);
+    display: flex; align-items: center; justify-content: flex-end;
+    padding: 0 14px; z-index: 20;
+  }
+  .menubar-icon {
+    width: 18px; height: 18px; cursor: pointer; border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s var(--ease);
+  }
+  .menubar-icon:hover, .menubar-icon.open { background: var(--color-pale-slate); }
+  .menubar-icon svg { width: 12px; height: 12px; }
+
+  .menubar-dropdown {
+    position: fixed; top: 30px; right: 14px;
+    width: 220px; background: var(--color-pure-white);
+    border-radius: var(--radius-md); box-shadow: var(--shadow-xl);
+    padding: 8px; z-index: 25;
+    opacity: 0; transform: translateY(-4px); pointer-events: none;
+    transition: opacity 0.15s var(--ease), transform 0.15s var(--ease);
+  }
+  .menubar-dropdown.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .menu-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 8px; font-size: 12px; border-radius: 5px;
+  }
+  .menu-row.hoverable:hover { background: var(--color-lavender-mist); cursor: pointer; }
+  .menu-label { color: var(--color-graphite); }
+  .menu-value { color: var(--color-ink); font-weight: 500; }
+  .menu-divider { height: 1px; background: var(--color-pale-slate); margin: 6px 0; }
+
+  .switch { width: 30px; height: 17px; border-radius: 9999px; background: var(--color-pale-slate); position: relative; cursor: pointer; transition: background 0.2s var(--ease); }
+  .switch.on { background: var(--color-cobalt); }
+  .switch .knob { position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: white; transition: transform 0.2s var(--ease); box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+  .switch.on .knob { transform: translateX(13px); }
+
+  /* ---------- Fake desktop app ---------- */
+  .desktop {
+    position: absolute; inset: 26px 0 0 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fake-window {
+    width: 460px; background: var(--color-pure-white);
+    border-radius: 10px; box-shadow: var(--shadow-xl);
+    overflow: hidden;
+  }
+  .fake-titlebar {
+    height: 32px; background: #f4f6f8; border-bottom: 1px solid var(--color-pale-slate);
+    display: flex; align-items: center; padding: 0 12px; gap: 6px;
+  }
+  .fake-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .fake-window-body { padding: 22px 24px; font-size: 14px; line-height: 1.6; color: var(--color-ink); }
+  .fake-window-title { font-size: 11px; font-family: var(--font-mono); color: var(--color-graphite); text-align: center; flex: 1; margin-right: 44px; }
+
+  .selectable { user-select: text; }
+  .fake-selection { background: rgba(49,97,223,0.18); border-radius: 2px; }
+
+  .trigger-hint {
+    margin-top: 16px; text-align: center; font-size: 11px; color: var(--color-graphite);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .kbd {
+    font-family: var(--font-mono); font-size: 10.5px; background: var(--color-pure-white);
+    border: 1px solid var(--color-pale-slate); border-radius: 4px; padding: 2px 6px;
+    box-shadow: 0 1px 0 var(--color-pale-slate);
+  }
+  .btn-trigger {
+    background: var(--color-ink); color: white; border: none; font-size: 12px; font-weight: 500;
+    padding: 7px 16px; border-radius: var(--radius-full); cursor: pointer; margin-top: 10px;
+    transition: transform 0.1s var(--ease), background 0.15s var(--ease);
+  }
+  .btn-trigger:hover { background: #3a4247; }
+  .btn-trigger:active { transform: scale(0.97); }
+
+  /* ---------- HUD ---------- */
+  #hud {
+    position: absolute; width: 320px;
+    background: var(--color-pure-white); border-radius: 10px;
+    box-shadow: var(--shadow-xl); border: 1px solid var(--color-pale-slate);
+    padding: 14px 16px; z-index: 30;
+    opacity: 0; transform: scale(0.94) translateY(6px);
+    pointer-events: none;
+    transition: opacity 0.18s var(--ease), transform 0.18s var(--ease);
+  }
+  #hud.show { opacity: 1; transform: scale(1) translateY(0); pointer-events: auto; }
+  .hud-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+  }
+  .hud-profile {
+    font-family: var(--font-mono); font-size: 10px; font-weight: 500; letter-spacing: 0.06em;
+    color: var(--color-iris-blue); text-transform: uppercase;
+  }
+  .hud-body { font-size: 13px; line-height: 1.55; min-height: 42px; }
+  .hud-skeleton { display: flex; flex-direction: column; gap: 6px; }
+  .hud-skel-line { height: 9px; border-radius: 4px; background: linear-gradient(90deg, var(--color-pale-slate) 25%, #eef1f2 37%, var(--color-pale-slate) 63%); background-size: 400% 100%; animation: shimmer 1.3s ease-in-out infinite; }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+  .hud-diff-add { background: rgba(137,236,176,0.35); border-radius: 3px; padding: 0 2px; }
+  .hud-diff-del { text-decoration: line-through; color: var(--color-dove-gray); }
+  .hud-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .hud-btn {
+    flex: 1; font-size: 12px; font-weight: 500; padding: 7px; border-radius: var(--radius-full);
+    cursor: pointer; border: none; display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: background 0.15s var(--ease), transform 0.1s var(--ease);
+  }
+  .hud-accept { background: var(--color-cobalt); color: white; }
+  .hud-accept:hover { background: var(--color-midnight-iris); }
+  .hud-reject { background: var(--color-lavender-mist); color: var(--color-graphite); }
+  .hud-reject:hover { color: var(--color-ink); }
+  .hud-kbd { font-family: var(--font-mono); font-size: 9px; opacity: 0.75; }
+
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px);
+    background: var(--color-ink); color: white; font-size: 12px; font-weight: 500;
+    padding: 9px 16px; border-radius: var(--radius-full); box-shadow: var(--shadow-xl);
+    display: flex; align-items: center; gap: 7px; opacity: 0; pointer-events: none;
+    transition: opacity 0.25s var(--ease), transform 0.25s var(--ease); z-index: 60;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast .dot { width: 6px; height: 6px; border-radius: 50%; }
+  #toast .dot.accept { background: var(--color-mint-pulse); }
+  #toast .dot.reject { background: var(--color-dove-gray); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- Onboarding: Accessibility permission -->
+<div id="onboarding">
+  <div class="onboard-card">
+    <div class="onboard-icon">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3161df" stroke-width="1.7"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    </div>
+    <p class="onboard-title">Voicecraft needs Accessibility access</p>
+    <p class="onboard-body">This lets ⌥Space capture selected text in any app and replace it in place. Your text is never sent anywhere except the provider you've configured.</p>
+
+    <ul class="onboard-steps">
+      <li><span class="step-num">1</span> Click "Open System Settings" below</li>
+      <li><span class="step-num">2</span> Enable Voicecraft under Privacy &amp; Security → Accessibility</li>
+      <li><span class="step-num">3</span> Come back here and click "Recheck"</li>
+    </ul>
+
+    <div id="status-pill" class="status-pill"><span class="dot"></span><span id="status-text">Not granted</span></div>
+
+    <button class="btn-primary" onclick="openSettings()">Open System Settings</button>
+    <button class="btn-secondary" onclick="recheck()">I've done this — Recheck</button>
+  </div>
+</div>
+
+<!-- Menu bar -->
+<div class="menubar">
+  <div class="menubar-icon" id="menubar-icon" onclick="toggleMenu()">
+    <svg viewBox="0 0 40 40" fill="none"><path d="M6 8 L20 32 L34 8" stroke="#272c30" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+  </div>
+</div>
+<div class="menubar-dropdown" id="menubar-dropdown">
+  <div class="menu-row"><span class="menu-label">Last used</span><span class="menu-value">Straight Shooter</span></div>
+  <div class="menu-divider"></div>
+  <div class="menu-row"><span class="menu-label">Hotkey (⌥ Space)</span><div class="switch on" id="hotkey-switch" onclick="toggleSwitch(this)"><div class="knob"></div></div></div>
+  <div class="menu-divider"></div>
+  <div class="menu-row hoverable">Open Voicecraft</div>
+</div>
+
+<!-- Fake desktop with a fake "other app" window -->
+<div class="desktop">
+  <div>
+    <div class="fake-window">
+      <div class="fake-titlebar">
+        <div class="fake-dot" style="background:#ff5f57"></div>
+        <div class="fake-dot" style="background:#febc2e"></div>
+        <div class="fake-dot" style="background:#28c840"></div>
+        <span class="fake-window-title">Notes</span>
+      </div>
+      <div class="fake-window-body selectable" id="fake-text">
+        <span id="text-selected" class="fake-selection">hey just wanted to check if you had a chance to look at the doc I sent over, no rush but would be good to hear back before friday if possible thanks!</span>
+      </div>
+    </div>
+    <div class="trigger-hint">
+      Text selected in another app — press <span class="kbd">⌥ Space</span> to rewrite in place
+    </div>
+    <div style="text-align:center">
+      <button class="btn-trigger" onclick="trigger()">Simulate ⌥ Space</button>
+    </div>
+  </div>
+</div>
+
+<!-- Floating HUD -->
+<div id="hud">
+  <div class="hud-header">
+    <span class="hud-profile">Straight Shooter · Rewrite</span>
+  </div>
+  <div class="hud-body">
+    <div class="hud-skeleton" id="hud-skeleton">
+      <div class="hud-skel-line" style="width:95%"></div>
+      <div class="hud-skel-line" style="width:80%"></div>
+      <div class="hud-skel-line" style="width:60%"></div>
+    </div>
+    <div id="hud-result" class="hidden">Hey — following up on the doc I sent. Can you take a look before Friday? Thanks.</div>
+  </div>
+  <div class="hud-actions">
+    <button class="hud-btn hud-accept" onclick="accept()">Accept <span class="hud-kbd">↵</span></button>
+    <button class="hud-btn hud-reject" onclick="reject()">Reject <span class="hud-kbd">Esc</span></button>
+  </div>
+</div>
+
+<div id="toast"><span class="dot" id="toast-dot"></span><span id="toast-text">Replaced</span></div>
+
+<script>
+  // ---- Onboarding ----
+  function openSettings() {
+    // Real app: opens x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility
+    recheck(true);
+  }
+  function recheck(fromSettings) {
+    const pill = document.getElementById('status-pill');
+    const text = document.getElementById('status-text');
+    if (fromSettings) {
+      pill.classList.add('granted');
+      text.textContent = 'Granted';
+      setTimeout(() => {
+        document.getElementById('onboarding').classList.add('fade-out');
+      }, 500);
+    } else {
+      text.textContent = 'Still not granted — try "Open System Settings"';
+    }
+  }
+
+  // ---- Menu bar ----
+  function toggleMenu() {
+    document.getElementById('menubar-dropdown').classList.toggle('show');
+    document.getElementById('menubar-icon').classList.toggle('open');
+  }
+  function toggleSwitch(el) { el.classList.toggle('on'); }
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.menubar-icon') && !e.target.closest('.menubar-dropdown')) {
+      document.getElementById('menubar-dropdown').classList.remove('show');
+      document.getElementById('menubar-icon').classList.remove('open');
+    }
+  });
+
+  // ---- Hotkey trigger + HUD ----
+  let hudOpen = false;
+  function trigger() {
+    const win = document.querySelector('.fake-window').getBoundingClientRect();
+    const hud = document.getElementById('hud');
+    hud.style.left = (win.left + win.width / 2 - 160) + 'px';
+    hud.style.top = (win.top + win.height + 14) + 'px';
+
+    document.getElementById('hud-skeleton').style.display = 'flex';
+    document.getElementById('hud-result').classList.add('hidden');
+    hud.classList.add('show');
+    hudOpen = true;
+
+    setTimeout(() => {
+      document.getElementById('hud-skeleton').style.display = 'none';
+      document.getElementById('hud-result').classList.remove('hidden');
+    }, 700);
+  }
+
+  function accept() {
+    document.getElementById('text-selected').textContent =
+      document.getElementById('hud-result').textContent;
+    closeHud();
+    showToast('Replaced', 'accept');
+  }
+  function reject() {
+    closeHud();
+    showToast('Discarded', 'reject');
+  }
+  function closeHud() {
+    document.getElementById('hud').classList.remove('show');
+    hudOpen = false;
+  }
+
+  let toastTimer;
+  function showToast(msg, kind) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-text').textContent = msg;
+    document.getElementById('toast-dot').className = 'dot ' + kind;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (!hudOpen) return;
+    if (e.key === 'Enter') accept();
+    if (e.key === 'Escape') reject();
+  });
+</script>
+
+</body>
+</html>
