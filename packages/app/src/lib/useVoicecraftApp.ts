@@ -25,6 +25,15 @@ function slugify(name: string): string {
   return slug || `profile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
 }
 
+// A new profile's id must not collide with an existing one (predefined or
+// custom) — a collision would make the new profile unreachable/unselectable.
+function uniqueId(base: string, existingIds: Set<string>): string {
+  if (!existingIds.has(base)) return base;
+  let n = 2;
+  while (existingIds.has(`${base}-${n}`)) n++;
+  return `${base}-${n}`;
+}
+
 export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftAppOptions) {
   const [profiles, setProfiles] = useState<VoiceProfile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
@@ -81,7 +90,7 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
 
   const saveProfile = useCallback(
     async (draft: ProfileDraft, existingId?: string) => {
-      const id = existingId ?? slugify(draft.name);
+      const id = existingId ?? uniqueId(slugify(draft.name), new Set(profiles.map((p) => p.id)));
       const next: VoiceProfile = { id, name: draft.name, description: draft.description };
       const updated = existingId ? profiles.map((p) => (p.id === existingId ? next : p)) : [...profiles, next];
 

@@ -108,6 +108,21 @@ describe("useVoicecraftApp", () => {
     expect(writeFile).toHaveBeenCalled();
   });
 
+  it("disambiguates a new profile's id when it collides with an existing one", async () => {
+    const { readFile, writeFile } = makeFileStore(serializeProfiles(predefinedProfiles));
+    const engine = makeEngine(vi.fn());
+    const collidingName = predefinedProfiles[0].name; // slugifies to the same id
+
+    const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
+    await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+
+    await act(() => result.current.saveProfile({ name: collidingName, description: "A different voice." }));
+
+    expect(result.current.profiles).toHaveLength(predefinedProfiles.length + 1);
+    expect(result.current.selectedProfileId).not.toBe(predefinedProfiles[0].id);
+    expect(result.current.selectedProfile?.description).toBe("A different voice.");
+  });
+
   it("edits an existing profile in place", async () => {
     const { readFile, writeFile } = makeFileStore(serializeProfiles(predefinedProfiles));
     const engine = makeEngine(vi.fn());

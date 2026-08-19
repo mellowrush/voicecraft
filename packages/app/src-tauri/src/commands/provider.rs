@@ -52,7 +52,11 @@ pub fn parse_provider_response(
 
 #[tauri::command]
 pub async fn call_provider(prompt: String) -> Result<String, ProviderCallError> {
-    let api_key = get_api_key_internal()
+    // Native Keychain access can block on a first-time OS permission prompt —
+    // run it off the async executor thread so it doesn't stall other commands.
+    let api_key = tauri::async_runtime::spawn_blocking(get_api_key_internal)
+        .await
+        .map_err(|e| provider_error(e.to_string()))?
         .map_err(provider_error)?
         .ok_or_else(|| provider_error("No API key configured — add one in Settings."))?;
 

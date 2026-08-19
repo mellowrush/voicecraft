@@ -34,4 +34,14 @@ describe("wordDiff", () => {
     expect(wordDiff("", "")).toEqual([]);
     expect(wordDiff("", "new text")).toEqual([{ type: "add", text: "new text" }]);
   });
+
+  it("falls back to a whole-block diff above the LCS size guard, instead of freezing", () => {
+    const before = "word ".repeat(3000);
+    const after = "different ".repeat(3000);
+
+    expect(wordDiff(before, after)).toEqual([
+      { type: "del", text: before },
+      { type: "add", text: after },
+    ]);
+  });
 });

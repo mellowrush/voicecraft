@@ -148,7 +148,7 @@ export function MainPanel({
         <button
           className="run-btn"
           data-testid="run-btn"
-          disabled={isLoading || !inputText.trim()}
+          disabled={isLoading || !inputText.trim() || !profile}
           onClick={onRun}
         >
           {isLoading && <span className="spinner" />}
