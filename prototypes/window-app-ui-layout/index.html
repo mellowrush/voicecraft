@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Voicecraft — Window App UI Prototype</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script type="text/tailwindcss">
+  @theme {
+    --color-page-white: #ffffff;
+    --color-ink-black: #000000;
+    --color-charcoal: #171717;
+    --color-granite: #5e5e5e;
+    --color-slate: #6e6e73;
+    --color-mist: #d2d2d7;
+    --color-wash-blue: #e3eeff;
+    --color-signal-blue: #3b82f6;
+    --color-link-blue: #6ea5ff;
+
+    --font-satoshi: 'Satoshi', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-inter: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    --text-caption: 12px;
+    --text-body: 15px;
+    --text-subheading: 21px;
+    --text-heading: 53px;
+
+    --radius-cards: 8px;
+    --radius-inputs: 8px;
+    --radius-buttons: 9999px;
+  }
+</style>
+<style>
+  body { font-family: var(--font-satoshi); }
+  input, textarea { font-family: var(--font-inter); }
+  .diff-add { background: var(--color-wash-blue); color: var(--color-charcoal); }
+  .diff-del { text-decoration: line-through; color: var(--color-slate); }
+</style>
+</head>
+<body class="bg-page-white text-charcoal text-[15px] leading-[1.4] h-screen overflow-hidden">
+
+<div class="flex h-screen">
+
+  <!-- Sidebar: voice profile picker -->
+  <aside class="w-64 shrink-0 border-r border-mist flex flex-col">
+    <div class="px-4 py-4 border-b border-mist flex items-center justify-between">
+      <h1 class="text-[15px] font-bold">Voicecraft</h1>
+      <button
+        onclick="document.getElementById('new-profile-modal').classList.remove('hidden')"
+        class="w-7 h-7 rounded-full bg-charcoal text-white flex items-center justify-center hover:opacity-80"
+        title="New voice profile"
+      >+</button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-2 py-3">
+      <p class="px-2 text-[12px] font-medium text-slate uppercase tracking-wide mb-2">Predefined</p>
+      <button class="profile-item w-full text-left px-3 py-2 rounded-[8px] mb-1 hover:bg-wash-blue/40 selected" data-name="Straight Shooter" data-desc="Blunt, no fluff, gets to the point in as few words as possible.">
+        <div class="text-[15px] font-medium">Straight Shooter</div>
+        <div class="text-[12px] text-slate truncate">Blunt, no fluff, gets to the point</div>
+      </button>
+      <button class="profile-item w-full text-left px-3 py-2 rounded-[8px] mb-1 hover:bg-wash-blue/40" data-name="Warm & Encouraging" data-desc="Friendly, supportive tone, softens criticism, uses encouraging language.">
+        <div class="text-[15px] font-medium">Warm &amp; Encouraging</div>
+        <div class="text-[12px] text-slate truncate">Friendly, supportive tone</div>
+      </button>
+      <button class="profile-item w-full text-left px-3 py-2 rounded-[8px] mb-1 hover:bg-wash-blue/40" data-name="Formal Memo" data-desc="Corporate-formal register, third person where natural, no contractions.">
+        <div class="text-[15px] font-medium">Formal Memo</div>
+        <div class="text-[12px] text-slate truncate">Corporate-formal register</div>
+      </button>
+
+      <p class="px-2 text-[12px] font-medium text-slate uppercase tracking-wide mt-4 mb-2">Custom</p>
+      <button class="profile-item w-full text-left px-3 py-2 rounded-[8px] mb-1 hover:bg-wash-blue/40 group flex items-center justify-between" data-name="My Cofounder Voice" data-desc="How my cofounder Alex writes Slack messages: short sentences, occasional emoji, calls people by name.">
+        <div class="min-w-0">
+          <div class="text-[15px] font-medium">My Cofounder Voice</div>
+          <div class="text-[12px] text-slate truncate">How Alex writes Slack messages</div>
+        </div>
+        <span class="opacity-0 group-hover:opacity-100 text-[12px] text-slate hover:text-charcoal shrink-0 pl-2" title="Edit" onclick="event.stopPropagation()">✎</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 flex flex-col min-w-0">
+
+    <!-- Header: selected profile + mode -->
+    <div class="px-6 py-4 border-b border-mist flex items-center justify-between">
+      <div>
+        <div class="text-[21px] font-bold leading-[1.3] tracking-[-0.63px]" id="active-profile-name">Straight Shooter</div>
+        <div class="text-[12px] text-slate" id="active-profile-desc">Blunt, no fluff, gets to the point in as few words as possible.</div>
+      </div>
+
+      <div class="flex items-center gap-1 bg-mist/40 rounded-full p-1">
+        <button id="mode-rewrite" onclick="setMode('rewrite')" class="px-4 py-1.5 rounded-full text-[13px] font-medium bg-charcoal text-white">Rewrite</button>
+        <button id="mode-generate" onclick="setMode('generate')" class="px-4 py-1.5 rounded-full text-[13px] font-medium text-slate hover:text-charcoal">Generate</button>
+      </div>
+    </div>
+
+    <!-- Context field -->
+    <div class="px-6 pt-4">
+      <input
+        type="text"
+        placeholder="Context (optional) — e.g. \"formal business email\", \"twitter reply, keep under 280 chars\""
+        class="w-full text-[13px] px-3 py-2 border border-mist rounded-[8px] placeholder:text-slate focus:outline-none focus:border-signal-blue"
+      />
+    </div>
+
+    <!-- Compose area -->
+    <div class="flex-1 flex gap-4 px-6 py-4 min-h-0">
+
+      <div class="flex-1 flex flex-col min-w-0">
+        <label class="text-[12px] font-medium text-slate mb-1" id="input-label">Original text</label>
+        <textarea
+          class="flex-1 w-full resize-none border border-mist rounded-[8px] p-3 text-[15px] focus:outline-none focus:border-signal-blue"
+          placeholder="Paste or type text to rewrite..."
+        >hey just wanted to check if you had a chance to look at the doc I sent over, no rush but would be good to hear back before friday if possible thanks!</textarea>
+      </div>
+
+      <div class="flex-1 flex flex-col min-w-0">
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-[12px] font-medium text-slate">Result</label>
+          <div id="diff-toggle-wrap" class="flex items-center gap-1 bg-mist/40 rounded-full p-0.5">
+            <button id="view-result" onclick="setView('result')" class="px-3 py-1 rounded-full text-[12px] font-medium bg-charcoal text-white">Result</button>
+            <button id="view-diff" onclick="setView('diff')" class="px-3 py-1 rounded-full text-[12px] font-medium text-slate hover:text-charcoal">Diff</button>
+          </div>
+        </div>
+
+        <div class="flex-1 border border-mist rounded-[8px] p-3 overflow-y-auto bg-page-white">
+          <p id="result-plain" class="text-[15px]">Hey — following up on the doc I sent. Can you take a look before Friday? Thanks.</p>
+          <p id="result-diff" class="text-[15px] hidden leading-[1.6]"><span class="diff-del">hey just wanted to check if you had a chance to look at the doc I sent over, no rush but would be good to</span> <span class="diff-add">Hey — following up on the doc I sent. Can you take a look before Friday?</span> <span class="diff-del">hear back before friday if possible</span> <span class="diff-add">Thanks.</span></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action bar -->
+    <div class="px-6 py-4 border-t border-mist flex items-center justify-between">
+      <span class="text-[12px] text-slate" id="status-text">Ready</span>
+      <button class="px-5 py-2 rounded-full bg-signal-blue text-white text-[14px] font-medium hover:opacity-90" onclick="runAction()">
+        <span id="action-label">Rewrite</span>
+      </button>
+    </div>
+  </main>
+</div>
+
+<!-- New profile modal (stub, not wired) -->
+<div id="new-profile-modal" class="hidden fixed inset-0 bg-ink-black/30 flex items-center justify-center">
+  <div class="bg-page-white rounded-[8px] w-[420px] p-6 shadow-[0_20px_40px_rgba(0,0,0,0.12)]">
+    <h2 class="text-[15px] font-bold mb-4">New voice profile</h2>
+    <label class="text-[12px] font-medium text-slate">Name</label>
+    <input class="w-full border border-mist rounded-[8px] px-3 py-2 mb-3 text-[15px]" placeholder="e.g. My Cofounder Voice" />
+    <label class="text-[12px] font-medium text-slate">Description</label>
+    <textarea class="w-full border border-mist rounded-[8px] px-3 py-2 mb-4 text-[15px]" rows="3" placeholder="Describe the voice..."></textarea>
+    <div class="flex justify-end gap-2">
+      <button class="px-4 py-1.5 rounded-full text-[13px] text-slate hover:text-charcoal" onclick="document.getElementById('new-profile-modal').classList.add('hidden')">Cancel</button>
+      <button class="px-4 py-1.5 rounded-full bg-charcoal text-white text-[13px]" onclick="document.getElementById('new-profile-modal').classList.add('hidden')">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('.profile-item').forEach(el => {
+    el.addEventListener('click', () => {
+      document.querySelectorAll('.profile-item').forEach(p => p.classList.remove('selected', 'bg-wash-blue/40'));
+      el.classList.add('selected', 'bg-wash-blue/40');
+      document.getElementById('active-profile-name').textContent = el.dataset.name;
+      document.getElementById('active-profile-desc').textContent = el.dataset.desc;
+    });
+  });
+
+  function setMode(mode) {
+    const isRewrite = mode === 'rewrite';
+    document.getElementById('mode-rewrite').className = 'px-4 py-1.5 rounded-full text-[13px] font-medium ' + (isRewrite ? 'bg-charcoal text-white' : 'text-slate hover:text-charcoal');
+    document.getElementById('mode-generate').className = 'px-4 py-1.5 rounded-full text-[13px] font-medium ' + (!isRewrite ? 'bg-charcoal text-white' : 'text-slate hover:text-charcoal');
+    document.getElementById('input-label').textContent = isRewrite ? 'Original text' : 'Instruction';
+    document.getElementById('action-label').textContent = isRewrite ? 'Rewrite' : 'Generate';
+    // Diff only makes sense when there's an original to diff against (rewrite mode).
+    document.getElementById('diff-toggle-wrap').classList.toggle('hidden', !isRewrite);
+    if (!isRewrite) setView('result');
+  }
+
+  function setView(view) {
+    const isResult = view === 'result';
+    document.getElementById('view-result').className = 'px-3 py-1 rounded-full text-[12px] font-medium ' + (isResult ? 'bg-charcoal text-white' : 'text-slate hover:text-charcoal');
+    document.getElementById('view-diff').className = 'px-3 py-1 rounded-full text-[12px] font-medium ' + (!isResult ? 'bg-charcoal text-white' : 'text-slate hover:text-charcoal');
+    document.getElementById('result-plain').classList.toggle('hidden', !isResult);
+    document.getElementById('result-diff').classList.toggle('hidden', isResult);
+  }
+
+  function runAction() {
+    const status = document.getElementById('status-text');
+    status.textContent = 'Generating...';
+    setTimeout(() => { status.textContent = 'Ready'; }, 800);
+  }
+</script>
+
+</body>
+</html>
