@@ -3,6 +3,7 @@ import { createEngine } from "@voicecraft/core";
 import { useVoicecraftApp } from "./lib/useVoicecraftApp";
 import { tauriProvider } from "./lib/providerClient";
 import { readProfilesFile, writeProfilesFile } from "./lib/tauriProfileFile";
+import { updateTrayLastUsedProfile } from "./lib/hotkeyClient";
 import { Sidebar } from "./components/Sidebar";
 import { MainPanel } from "./components/MainPanel";
 import { ProfileModal } from "./components/ProfileModal";
@@ -13,6 +14,12 @@ import "./App.css";
 function App() {
   const engine = useMemo(() => createEngine({ provider: tauriProvider }), []);
   const app = useVoicecraftApp({ engine, readFile: readProfilesFile, writeFile: writeProfilesFile });
+
+  // Keeps the tray's "last used" label in sync with the window app's
+  // selection, so the menu bar reflects it without polling from Rust.
+  useEffect(() => {
+    if (app.selectedProfile) void updateTrayLastUsedProfile(app.selectedProfile.name);
+  }, [app.selectedProfile]);
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);

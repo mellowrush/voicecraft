@@ -2,7 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { Engine } from "@voicecraft/core";
 import { useVoicecraftApp } from "./useVoicecraftApp";
-import { serializeProfiles } from "./profileStore";
+import { serializeProfilesFile } from "./profileStore";
 import { predefinedProfiles } from "./predefinedProfiles";
 
 function makeFileStore(initial = "") {
@@ -13,6 +13,10 @@ function makeFileStore(initial = "") {
       contents = next;
     }),
   };
+}
+
+function seededStore(lastUsedProfileId: string | null = null) {
+  return serializeProfilesFile({ profiles: predefinedProfiles, lastUsedProfileId });
 }
 
 function makeEngine(generate: Engine["generate"]): Engine {
@@ -30,8 +34,33 @@ describe("useVoicecraftApp", () => {
     expect(result.current.selectedProfileId).toBe(predefinedProfiles[0].id);
   });
 
+  it("resumes the last-used profile from the store on load", async () => {
+    const { readFile, writeFile } = makeFileStore(seededStore(predefinedProfiles[1].id));
+    const engine = makeEngine(vi.fn());
+
+    const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
+
+    await waitFor(() => expect(result.current.selectedProfileId).toBe(predefinedProfiles[1].id));
+  });
+
+  it("persists the last-used profile id into the same store when selection changes", async () => {
+    const { readFile, writeFile } = makeFileStore(seededStore());
+    const engine = makeEngine(vi.fn());
+
+    const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
+    await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+
+    act(() => result.current.setSelectedProfileId(predefinedProfiles[1].id));
+
+    await waitFor(() =>
+      expect(writeFile).toHaveBeenCalledWith(
+        seededStore(predefinedProfiles[1].id),
+      ),
+    );
+  });
+
   it("runs the engine and reports a success result", async () => {
-    const { readFile, writeFile } = makeFileStore(serializeProfiles(predefinedProfiles));
+    const { readFile, writeFile } = makeFileStore(seededStore());
     const generate = vi.fn().mockResolvedValue({ text: "rewritten!" });
     const engine = makeEngine(generate);
 
@@ -49,7 +78,7 @@ describe("useVoicecraftApp", () => {
   });
 
   it("maps an EngineError into a user-facing error message", async () => {
-    const { readFile, writeFile } = makeFileStore(serializeProfiles(predefinedProfiles));
+    const { readFile, writeFile } = makeFileStore(seededStore());
     const generate = vi.fn().mockRejectedValue({ code: "rate_limited", retryAfterMs: 3000 });
     const engine = makeEngine(generate);
 
@@ -63,7 +92,7 @@ describe("useVoicecraftApp", () => {
   });
 
   it("does not run without input text", async () => {
-    const { readFile, writeFile } = makeFileStore(serializeProfiles(predefinedProfiles));
+    const { readFile, writeFile } = makeFileStore(seededStore());
     const generate = vi.fn();
     const engine = makeEngine(generate);
 
@@ -77,7 +106,7 @@ describe("useVoicecraftApp", () => {
   });
 
   it("resets the view to result when switching to generate mode", async () => {
-    const { readFile, writeFile } = makeFileStore(serializeProfiles(predefinedProfiles));
+    const { readFile, writeFile } = makeFileStore(seededStore());
     const engine = makeEngine(vi.fn());
 
     const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
@@ -91,7 +120,7 @@ describe("useVoicecraftApp", () => {
   });
 
   it("saves a new custom profile and persists it", async () => {
-    const { readFile, writeFile } = makeFileStore(serializeProfiles(predefinedProfiles));
+    const { readFile, writeFile } = makeFileStore(seededStore());
     const engine = makeEngine(vi.fn());
 
     const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
@@ -109,7 +138,7 @@ describe("useVoicecraftApp", () => {
   });
 
   it("disambiguates a new profile's id when it collides with an existing one", async () => {
-    const { readFile, writeFile } = makeFileStore(serializeProfiles(predefinedProfiles));
+    const { readFile, writeFile } = makeFileStore(seededStore());
     const engine = makeEngine(vi.fn());
     const collidingName = predefinedProfiles[0].name; // slugifies to the same id
 
@@ -124,7 +153,7 @@ describe("useVoicecraftApp", () => {
   });
 
   it("edits an existing profile in place", async () => {
-    const { readFile, writeFile } = makeFileStore(serializeProfiles(predefinedProfiles));
+    const { readFile, writeFile } = makeFileStore(seededStore());
     const engine = makeEngine(vi.fn());
     const target = predefinedProfiles[0];
 

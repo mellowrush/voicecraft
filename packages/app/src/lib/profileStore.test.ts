@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { loadProfiles, parseProfilesFile, saveProfiles, serializeProfiles } from "./profileStore";
+import { loadProfiles, parseProfilesFile, serializeProfilesFile } from "./profileStore";
 import { predefinedProfiles } from "./predefinedProfiles";
 import type { VoiceProfile } from "@voicecraft/core";
 
@@ -10,53 +10,57 @@ const customProfile: VoiceProfile = {
 };
 
 describe("parseProfilesFile", () => {
-  it("returns an empty array for an empty/missing file", () => {
-    expect(parseProfilesFile("")).toEqual([]);
-    expect(parseProfilesFile("   ")).toEqual([]);
+  it("returns an empty store for an empty/missing file", () => {
+    expect(parseProfilesFile("")).toEqual({ profiles: [], lastUsedProfileId: null });
+    expect(parseProfilesFile("   ")).toEqual({ profiles: [], lastUsedProfileId: null });
   });
 
-  it("returns an empty array for invalid JSON", () => {
-    expect(parseProfilesFile("{not json")).toEqual([]);
+  it("returns an empty store for invalid JSON", () => {
+    expect(parseProfilesFile("{not json")).toEqual({ profiles: [], lastUsedProfileId: null });
   });
 
-  it("returns an empty array when the JSON isn't an array", () => {
-    expect(parseProfilesFile(JSON.stringify({ foo: "bar" }))).toEqual([]);
+  it("returns an empty store when the JSON is neither an array nor an object", () => {
+    expect(parseProfilesFile("42")).toEqual({ profiles: [], lastUsedProfileId: null });
   });
 
-  it("round-trips valid profiles through voiceProfileSchema", () => {
-    const raw = serializeProfiles([customProfile]);
-    expect(parseProfilesFile(raw)).toEqual([customProfile]);
+  it("round-trips valid profiles and lastUsedProfileId through voiceProfileSchema", () => {
+    const raw = serializeProfilesFile({ profiles: [customProfile], lastUsedProfileId: customProfile.id });
+    expect(parseProfilesFile(raw)).toEqual({ profiles: [customProfile], lastUsedProfileId: customProfile.id });
   });
 
   it("drops invalid entries but keeps valid ones", () => {
-    const raw = JSON.stringify([customProfile, { id: "bad" /* missing name/description */ }]);
-    expect(parseProfilesFile(raw)).toEqual([customProfile]);
+    const raw = JSON.stringify({
+      profiles: [customProfile, { id: "bad" /* missing name/description */ }],
+      lastUsedProfileId: null,
+    });
+    expect(parseProfilesFile(raw)).toEqual({ profiles: [customProfile], lastUsedProfileId: null });
+  });
+
+  it("reads the pre-#21 bare-array file format, with no last-used profile", () => {
+    expect(parseProfilesFile(JSON.stringify([customProfile]))).toEqual({
+      profiles: [customProfile],
+      lastUsedProfileId: null,
+    });
   });
 });
 
 describe("loadProfiles", () => {
   it("seeds predefined profiles when the store is empty", async () => {
     const writeFile = vi.fn().mockResolvedValue(undefined);
-    const profiles = await loadProfiles(async () => "", writeFile);
+    const store = await loadProfiles(async () => "", writeFile);
 
-    expect(profiles).toEqual(predefinedProfiles);
-    expect(writeFile).toHaveBeenCalledWith(serializeProfiles(predefinedProfiles));
+    expect(store).toEqual({ profiles: predefinedProfiles, lastUsedProfileId: null });
+    expect(writeFile).toHaveBeenCalledWith(
+      serializeProfilesFile({ profiles: predefinedProfiles, lastUsedProfileId: null }),
+    );
   });
 
-  it("returns stored profiles without reseeding when the store is non-empty", async () => {
+  it("returns the stored profile store without reseeding when non-empty", async () => {
     const writeFile = vi.fn();
-    const profiles = await loadProfiles(async () => serializeProfiles([customProfile]), writeFile);
+    const raw = serializeProfilesFile({ profiles: [customProfile], lastUsedProfileId: customProfile.id });
+    const store = await loadProfiles(async () => raw, writeFile);
 
-    expect(profiles).toEqual([customProfile]);
+    expect(store).toEqual({ profiles: [customProfile], lastUsedProfileId: customProfile.id });
     expect(writeFile).not.toHaveBeenCalled();
-  });
-});
-
-describe("saveProfiles", () => {
-  it("serializes profiles and writes them out", async () => {
-    const writeFile = vi.fn().mockResolvedValue(undefined);
-    await saveProfiles([customProfile], writeFile);
-
-    expect(writeFile).toHaveBeenCalledWith(serializeProfiles([customProfile]));
   });
 });
