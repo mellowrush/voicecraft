@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Engine, EngineError, Mode, VoiceProfile } from "@voicecraft/core";
-import { loadProfiles, saveProfiles, type ReadFile, type WriteFile } from "./profileStore";
+import { loadProfiles, serializeProfilesFile, type ReadFile, type WriteFile } from "./profileStore";
 import { engineErrorMessage } from "./engineErrorMessage";
 
 export type RunStatus =
@@ -43,13 +43,15 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
   const [run, setRun] = useState<RunStatus>({ status: "idle" });
   const [view, setView] = useState<"result" | "diff">("result");
   const [editingProfileId, setEditingProfileId] = useState<string | "new" | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    loadProfiles(readFile, writeFile).then((loaded) => {
+    loadProfiles(readFile, writeFile).then((store) => {
       if (cancelled) return;
-      setProfiles(loaded);
-      setSelectedProfileId((current) => current ?? loaded[0]?.id ?? null);
+      setProfiles(store.profiles);
+      setSelectedProfileId(store.lastUsedProfileId ?? store.profiles[0]?.id ?? null);
+      setLoaded(true);
     });
     return () => {
       cancelled = true;
@@ -57,6 +59,15 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
     // Runs once on mount — readFile/writeFile identity is expected to be stable per app session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Single writer for the profiles store — keeps `profiles` and
+  // `selectedProfileId` (the hotkey flow's last-used profile, per issue
+  // #21) persisted together in one file, so there's no separate write path
+  // to keep in sync with this one.
+  useEffect(() => {
+    if (!loaded) return;
+    void writeFile(serializeProfilesFile({ profiles, lastUsedProfileId: selectedProfileId }));
+  }, [loaded, profiles, selectedProfileId, writeFile]);
 
   const selectedProfile = useMemo(
     () => profiles.find((p) => p.id === selectedProfileId) ?? null,
@@ -95,11 +106,10 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
       const updated = existingId ? profiles.map((p) => (p.id === existingId ? next : p)) : [...profiles, next];
 
       setProfiles(updated);
-      await saveProfiles(updated, writeFile);
       setEditingProfileId(null);
       setSelectedProfileId(id);
     },
-    [profiles, writeFile],
+    [profiles],
   );
 
   return {

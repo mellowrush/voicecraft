@@ -37,6 +37,16 @@ pub fn write_profiles_file(app: tauri::AppHandle, contents: String) -> Result<()
     write_profiles_to(&profiles_path(&app)?, &contents)
 }
 
+// Reads `lastUsedProfileId` straight off the same voice-profiles.json the
+// window app writes (see issue #21's decision against a separate "quick
+// voice" store) — used by the hotkey flow, which runs from a background
+// thread with no webview round-trip available.
+pub fn last_used_profile_id(app: &tauri::AppHandle) -> Option<String> {
+    let raw = read_profiles_from(&profiles_path(app).ok()?).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&raw).ok()?;
+    json.get("lastUsedProfileId")?.as_str().map(str::to_string)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

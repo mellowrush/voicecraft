@@ -14,6 +14,7 @@ beforeEach(() => {
   invokeMock.mockImplementation(async (cmd: string) => {
     if (cmd === "read_profiles_file") return "";
     if (cmd === "write_profiles_file") return undefined;
+    if (cmd === "update_last_used_profile_tray") return undefined;
     if (cmd === "get_api_key") return null;
     if (cmd === "call_provider") return "Hey — following up. Thanks!";
     throw new Error(`unexpected invoke: ${cmd}`);

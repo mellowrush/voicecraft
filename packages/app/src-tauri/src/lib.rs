@@ -1,19 +1,168 @@
 mod commands;
 
-use commands::persistence::{read_profiles_file, write_profiles_file};
+use serde::Serialize;
+use tauri::menu::{CheckMenuItem, CheckMenuItemBuilder, Menu, MenuItem};
+use tauri::tray::TrayIconBuilder;
+use tauri::{AppHandle, Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, ShortcutState};
+
+use commands::hotkey::{
+    capture_selected_text, check_accessibility_trusted, decide_hotkey_action, hud_accept, hud_reject,
+    is_accessibility_trusted, open_accessibility_prefs, HotkeyAction,
+};
+use commands::persistence::{last_used_profile_id, read_profiles_file, write_profiles_file};
 use commands::provider::call_provider;
 use commands::secrets::{get_api_key, set_api_key};
+
+const HOTKEY: &str = "alt+space";
+const MAIN_WINDOW: &str = "main";
+const HUD_WINDOW: &str = "hud";
+const ONBOARDING_WINDOW: &str = "onboarding";
+
+// Managed state so the tray's items (checkbox + last-used label) can be
+// updated from elsewhere in the app, which only has access to the
+// AppHandle, not the builder that originally created them.
+struct TrayMenuItems {
+    hotkey_item: CheckMenuItem<tauri::Wry>,
+    last_used_item: MenuItem<tauri::Wry>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct HotkeySelectionPayload {
+    text: String,
+    profile_id: Option<String>,
+}
+
+fn create_hidden_window(app: &AppHandle, label: &str, width: f64, height: f64) -> tauri::Result<()> {
+    WebviewWindowBuilder::new(app, label, WebviewUrl::App(format!("index.html?window={label}").into()))
+        .title("Voicecraft")
+        .inner_size(width, height)
+        .visible(false)
+        .decorations(false)
+        .transparent(true)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .position(80.0, 80.0)
+        .build()?;
+    Ok(())
+}
+
+fn show_and_focus(app: &AppHandle, label: &str) {
+    if let Some(window) = app.get_webview_window(label) {
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+// Runs off the main thread — capturing the selection blocks on a simulated
+// keystroke + a short settle delay, which would otherwise freeze the tray/
+// menu and any open windows for the duration.
+fn handle_hotkey_triggered(app: AppHandle) {
+    let trusted = is_accessibility_trusted();
+    if !trusted {
+        show_and_focus(&app, ONBOARDING_WINDOW);
+        return;
+    }
+
+    std::thread::spawn(move || {
+        let selection = capture_selected_text().unwrap_or(None);
+        match decide_hotkey_action(trusted, selection) {
+            HotkeyAction::ShowOnboarding => show_and_focus(&app, ONBOARDING_WINDOW),
+            HotkeyAction::Noop => {}
+            HotkeyAction::ShowHud { text } => {
+                let profile_id = last_used_profile_id(&app);
+                show_and_focus(&app, HUD_WINDOW);
+                let _ = app.emit_to(HUD_WINDOW, "hotkey://selection", HotkeySelectionPayload { text, profile_id });
+            }
+        }
+    });
+}
+
+fn toggle_hotkey(app: &AppHandle) {
+    let global_shortcut = app.global_shortcut();
+    let now_enabled = if global_shortcut.is_registered(HOTKEY) {
+        let _ = global_shortcut.unregister(HOTKEY);
+        false
+    } else {
+        let app_for_handler = app.clone();
+        let _ = global_shortcut.on_shortcut(HOTKEY, move |_app, _shortcut, event| {
+            if event.state == ShortcutState::Pressed {
+                handle_hotkey_triggered(app_for_handler.clone());
+            }
+        });
+        true
+    };
+
+    if let Some(items) = app.try_state::<TrayMenuItems>() {
+        let _ = items.hotkey_item.set_checked(now_enabled);
+    }
+}
+
+#[tauri::command]
+fn update_last_used_profile_tray(app: tauri::AppHandle, profile_name: String) {
+    if let Some(items) = app.try_state::<TrayMenuItems>() {
+        let _ = items.last_used_item.set_text(format!("Last used: {profile_name}"));
+    }
+}
+
+fn build_tray(app: &AppHandle) -> tauri::Result<()> {
+    let last_used_item = MenuItem::with_id(app, "last-used", "Last used: —", false, None::<&str>)?;
+    let open_item = MenuItem::with_id(app, "open", "Open Voicecraft", true, None::<&str>)?;
+    let hotkey_item =
+        CheckMenuItemBuilder::with_id("toggle-hotkey", "Hotkey (\u{2325} Space)").checked(true).build(app)?;
+    let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&last_used_item, &open_item, &hotkey_item, &quit_item])?;
+
+    app.manage(TrayMenuItems { hotkey_item, last_used_item });
+
+    TrayIconBuilder::new()
+        .menu(&menu)
+        .tooltip("Voicecraft")
+        .icon(app.default_window_icon().unwrap().clone())
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "open" => show_and_focus(app, MAIN_WINDOW),
+            "toggle-hotkey" => toggle_hotkey(app),
+            "quit" => app.exit(0),
+            _ => {}
+        })
+        .build(app)?;
+    Ok(())
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_shortcut(HOTKEY)
+                .expect("hardcoded shortcut string is valid")
+                .with_handler(|app, _shortcut, event| {
+                    if event.state == ShortcutState::Pressed {
+                        handle_hotkey_triggered(app.clone());
+                    }
+                })
+                .build(),
+        )
+        .setup(|app| {
+            create_hidden_window(app.handle(), HUD_WINDOW, 320.0, 200.0)?;
+            create_hidden_window(app.handle(), ONBOARDING_WINDOW, 360.0, 420.0)?;
+            build_tray(app.handle())?;
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             get_api_key,
             set_api_key,
             read_profiles_file,
             write_profiles_file,
             call_provider,
+            check_accessibility_trusted,
+            open_accessibility_prefs,
+            hud_accept,
+            hud_reject,
+            update_last_used_profile_tray,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
