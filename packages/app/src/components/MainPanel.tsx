@@ -60,14 +60,18 @@ export function MainPanel({
               Generate
             </button>
           </div>
-          <button className="settings-btn" title="Settings" onClick={onOpenSettings}>
+          <button className="settings-btn" title="Settings" aria-label="Settings" onClick={onOpenSettings}>
             ⚙
           </button>
         </div>
       </div>
 
       <div className="context-row">
+        <label htmlFor="context-input" className="sr-only">
+          Context (optional)
+        </label>
         <input
+          id="context-input"
           className="context-input"
           value={context}
           onChange={(e) => onContextChange(e.target.value)}
@@ -77,8 +81,11 @@ export function MainPanel({
 
       <div className="compose">
         <div className="panel">
-          <p className="panel-label">{isRewrite ? "Original text" : "Instruction"}</p>
+          <label className="panel-label" htmlFor="compose-input">
+            {isRewrite ? "Original text" : "Instruction"}
+          </label>
           <textarea
+            id="compose-input"
             value={inputText}
             onChange={(e) => onInputTextChange(e.target.value)}
             placeholder={isRewrite ? "Paste or type text to rewrite..." : "Describe what to generate..."}
@@ -110,6 +117,7 @@ export function MainPanel({
               <button
                 className="copy-btn"
                 title="Copy to clipboard"
+                aria-label="Copy to clipboard"
                 disabled={run.status !== "success"}
                 onClick={() => onCopy(resultText)}
               >
@@ -121,7 +129,7 @@ export function MainPanel({
             </div>
           </div>
 
-          <div className="result-box">
+          <div className="result-box" aria-live="polite">
             {isLoading && (
               <div className="skeleton active">
                 <div className="skeleton-line" style={{ width: "95%" }} />

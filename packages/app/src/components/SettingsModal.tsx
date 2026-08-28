@@ -20,6 +20,15 @@ export function SettingsModal({ open, onClose }: Props) {
     getApiKey().then((existing) => setHasKey(Boolean(existing)));
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
+
   async function handleSave() {
     if (!key.trim()) return;
     setError(null);
@@ -35,10 +44,13 @@ export function SettingsModal({ open, onClose }: Props) {
 
   return (
     <div className={`modal-overlay${open ? " show" : ""}`}>
-      <div className="modal">
-        <h2>Settings</h2>
-        <label className="field-label">API key</label>
+      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+        <h2 id="settings-modal-title">Settings</h2>
+        <label className="field-label" htmlFor="settings-api-key">
+          API key
+        </label>
         <input
+          id="settings-api-key"
           type="password"
           value={key}
           onChange={(e) => setKey(e.target.value)}

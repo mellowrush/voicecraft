@@ -14,18 +14,28 @@ export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit }
   const custom = profiles.filter((p) => !isPredefined(p));
 
   const renderItem = (profile: VoiceProfile, editable: boolean) => (
-    <button
+    <div
       key={profile.id}
       className={`profile-item${profile.id === selectedProfileId ? " selected" : ""}`}
+      role="button"
+      tabIndex={0}
       onClick={() => onSelect(profile.id)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(profile.id);
+        }
+      }}
     >
       <div>
         <div className="profile-name">{profile.name}</div>
         <div className="profile-desc">{profile.description}</div>
       </div>
       {editable && (
-        <span
+        <button
+          type="button"
           className="edit-affordance"
+          aria-label={`Edit ${profile.name}`}
           title="Edit"
           onClick={(e) => {
             e.stopPropagation();
@@ -33,9 +43,9 @@ export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit }
           }}
         >
           ✎
-        </span>
+        </button>
       )}
-    </button>
+    </div>
   );
 
   return (
@@ -60,7 +70,7 @@ export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit }
           </svg>
           Voicecraft
         </span>
-        <button className="new-btn" title="New voice profile" onClick={onNew}>
+        <button className="new-btn" title="New voice profile" aria-label="New voice profile" onClick={onNew}>
           +
         </button>
       </div>
