@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ProfileDraft } from "../lib/useVoicecraftApp";
 
 type Props = {
@@ -11,11 +11,13 @@ type Props = {
 export function ProfileModal({ open, initial, onSave, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
       setName(initial?.name ?? "");
       setDescription(initial?.description ?? "");
+      nameInputRef.current?.focus();
     }
   }, [open, initial]);
 
@@ -29,7 +31,13 @@ export function ProfileModal({ open, initial, onSave, onCancel }: Props) {
   }, [open, onCancel]);
 
   return (
-    <div className={`modal-overlay${open ? " show" : ""}`} data-testid="profile-modal">
+    <div
+      className={`modal-overlay${open ? " show" : ""}`}
+      data-testid="profile-modal"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="profile-modal-title">
         <h2 id="profile-modal-title">{initial ? "Edit voice profile" : "New voice profile"}</h2>
         <label className="field-label" htmlFor="profile-name">
@@ -37,6 +45,7 @@ export function ProfileModal({ open, initial, onSave, onCancel }: Props) {
         </label>
         <input
           id="profile-name"
+          ref={nameInputRef}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="e.g. My Cofounder Voice"
