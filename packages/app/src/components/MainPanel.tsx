@@ -46,15 +46,17 @@ export function MainPanel({
         </div>
 
         <div className="header-actions">
-          <div className="mode-toggle">
+          <div className="mode-toggle" role="group" aria-label="Mode">
             <button
               className={`mode-btn${isRewrite ? " active" : ""}`}
+              aria-pressed={isRewrite}
               onClick={() => onModeChange("rewrite")}
             >
               Rewrite
             </button>
             <button
               className={`mode-btn${!isRewrite ? " active" : ""}`}
+              aria-pressed={!isRewrite}
               onClick={() => onModeChange("generate")}
             >
               Generate
@@ -99,15 +101,17 @@ export function MainPanel({
             </p>
             <div className="toolbar-right">
               {isRewrite && (
-                <div className="view-toggle">
+                <div className="view-toggle" role="group" aria-label="View">
                   <button
                     className={`view-btn${view === "result" ? " active" : ""}`}
+                    aria-pressed={view === "result"}
                     onClick={() => onViewChange("result")}
                   >
                     Result
                   </button>
                   <button
                     className={`view-btn${view === "diff" ? " active" : ""}`}
+                    aria-pressed={view === "diff"}
                     onClick={() => onViewChange("diff")}
                   >
                     Diff
@@ -131,7 +135,7 @@ export function MainPanel({
 
           <div className="result-box" aria-live="polite">
             {isLoading && (
-              <div className="skeleton active">
+              <div className="skeleton active" aria-hidden="true">
                 <div className="skeleton-line" style={{ width: "95%" }} />
                 <div className="skeleton-line" style={{ width: "88%" }} />
                 <div className="skeleton-line" style={{ width: "60%" }} />
@@ -159,7 +163,7 @@ export function MainPanel({
           disabled={isLoading || !inputText.trim() || !profile}
           onClick={onRun}
         >
-          {isLoading && <span className="spinner" />}
+          {isLoading && <span className="spinner" aria-hidden="true" />}
           <span>{isRewrite ? "Rewrite" : "Generate"}</span>
         </button>
       </div>
