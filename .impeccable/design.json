@@ -5,7 +5,9 @@
   "extensions": {
     "colorMeta": {
       "iris-blue": { "role": "primary", "displayName": "Iris Blue", "canonical": "#3161df", "tonalRamp": ["#0a1a42", "#13307c", "#1b45b1", "#2b5cde", "#6085e6", "#91aaee", "#bdccf5", "#e9eefc"] },
-      "cobalt": { "role": "primary", "displayName": "Cobalt", "canonical": "#3e79ea", "tonalRamp": ["#081d45", "#0e3581", "#144cb8", "#2266e7", "#598ced", "#8caff2", "#bacff7", "#e8effc"] },
+      "cobalt": { "role": "primary", "displayName": "Cobalt", "canonical": "#306fe8", "tonalRamp": ["#081d45", "#0e3581", "#144cb8", "#2266e7", "#598ced", "#8caff2", "#bacff7", "#e8effc"] },
+      "error": { "role": "accent", "displayName": "Error", "canonical": "#b3261e", "tonalRamp": ["#3d0c08", "#701710", "#9f2117", "#c92b1f", "#dd6053", "#e9958c", "#f2c1bb", "#faeae8"] },
+      "success": { "role": "accent", "displayName": "Success", "canonical": "#1f7a4d", "tonalRamp": ["#0a2d1c", "#125536", "#197c4f", "#20a367", "#57c18c", "#8fd8ae", "#c4ebd3", "#e9f8ef"] },
       "midnight-iris": { "role": "primary", "displayName": "Midnight Iris", "canonical": "#2c65d3", "tonalRamp": ["#0d1e3f", "#193976", "#2351a9", "#346bd5", "#6790df", "#96b2e9", "#c0d1f2", "#eaf0fb"] },
       "mint-pulse": { "role": "accent", "displayName": "Mint Pulse", "canonical": "#89ecb0", "tonalRamp": ["#0b4220", "#147b3c", "#1cb056", "#2cdd72", "#61e695", "#91edb5", "#bdf4d3", "#e9fbf0"] },
       "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#272c30", "tonalRamp": ["#22272a", "#40484f", "#5b6771", "#788691", "#9aa4ad", "#b9c0c6", "#d5d9dd", "#f1f2f4"] },
@@ -38,7 +40,7 @@
       "refersTo": "button-primary",
       "description": "Run/save action — cobalt pill, generous padding, deliberate press.",
       "html": "<button class=\"ds-btn-primary\">Rewrite</button>",
-      "css": ".ds-btn-primary { background: #3e79ea; color: #ffffff; border: none; font-size: 13px; font-weight: 500; padding: 9px 22px; border-radius: 9999px; cursor: pointer; font-family: Inter, ui-sans-serif, system-ui, sans-serif; transition: background 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: #2c65d3; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(49,97,223,0.12); } .ds-btn-primary:disabled { opacity: 0.6; cursor: default; }"
+      "css": ".ds-btn-primary { background: #306fe8; color: #ffffff; border: none; font-size: 13px; font-weight: 500; padding: 9px 22px; border-radius: 9999px; cursor: pointer; font-family: Inter, ui-sans-serif, system-ui, sans-serif; transition: background 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: #2c65d3; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(49,97,223,0.12); } .ds-btn-primary:disabled { opacity: 0.6; cursor: default; }"
     },
     {
       "name": "Ghost Button",
@@ -62,7 +64,7 @@
       "refersTo": "mode-toggle",
       "description": "Two-way mode switcher (Rewrite / Generate) — pill track with solid-fill active state.",
       "html": "<div class=\"ds-segmented\"><button class=\"ds-segmented-btn is-active\">Rewrite</button><button class=\"ds-segmented-btn\">Generate</button></div>",
-      "css": ".ds-segmented { display: flex; gap: 2px; background: #f0f5fe; border-radius: 9999px; padding: 3px; width: fit-content; } .ds-segmented-btn { border: none; background: transparent; color: #60737a; font-size: 12px; font-weight: 500; padding: 6px 16px; border-radius: 9999px; cursor: pointer; font-family: Inter, ui-sans-serif, system-ui, sans-serif; transition: background 0.2s cubic-bezier(0.4,0,0.2,1), color 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-segmented-btn.is-active { background: #3e79ea; color: #ffffff; box-shadow: rgba(63,70,75,0.1) 0px 1px 3px 0px, rgba(63,70,75,0.1) 0px 0px 0px 1px; }"
+      "css": ".ds-segmented { display: flex; gap: 2px; background: #f0f5fe; border-radius: 9999px; padding: 3px; width: fit-content; } .ds-segmented-btn { border: none; background: transparent; color: #60737a; font-size: 12px; font-weight: 500; padding: 6px 16px; border-radius: 9999px; cursor: pointer; font-family: Inter, ui-sans-serif, system-ui, sans-serif; transition: background 0.2s cubic-bezier(0.4,0,0.2,1), color 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-segmented-btn.is-active { background: #306fe8; color: #ffffff; box-shadow: rgba(63,70,75,0.1) 0px 1px 3px 0px, rgba(63,70,75,0.1) 0px 0px 0px 1px; }"
     },
     {
       "name": "Text Input",

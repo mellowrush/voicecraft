@@ -3,7 +3,7 @@ name: Voicecraft
 description: Rewrites text into a chosen voice — a calm instrument panel for a hotkey-driven writing tool
 colors:
   iris-blue: "#3161df"
-  cobalt: "#3e79ea"
+  cobalt: "#306fe8"
   mint-pulse: "#89ecb0"
   midnight-iris: "#2c65d3"
   ink: "#272c30"
@@ -13,6 +13,8 @@ colors:
   pale-slate: "#e3e8ea"
   lavender-mist: "#f0f5fe"
   pure-white: "#ffffff"
+  error: "#b3261e"
+  success: "#1f7a4d"
 typography:
   display:
     fontFamily: "Playfair Display, Selecta, Georgia, serif"
@@ -81,7 +83,7 @@ The system explicitly rejects generic SaaS-dashboard grammar: no hero-metric til
 A restrained palette: one blue family carries every interactive/primary role, a warm mint marks "live/success" state sparingly, and a long ink-to-white neutral ramp does the rest of the work.
 
 ### Primary
-- **Cobalt** (#3e79ea): primary CTA background (`run-btn`, `btn-solid`, `new-btn`, active mode/HUD-accept), the color a user's eye should land on for "the thing to press."
+- **Cobalt** (#306fe8): primary CTA background (`run-btn`, `btn-solid`, `new-btn`, active mode/HUD-accept), the color a user's eye should land on for "the thing to press." Darkened slightly from an earlier `#3e79ea` so white button text clears WCAG AA (4.6:1).
 - **Iris Blue** (#3161df): focus rings, input focus borders, hover states on ghost/secondary controls, HUD profile label — a slightly deeper accent for "system is listening to you" states rather than "press me."
 - **Midnight Iris** (#2c65d3): hover/pressed state for cobalt elements — one step darker, never used at rest.
 
@@ -96,6 +98,8 @@ A restrained palette: one blue family carries every interactive/primary role, a 
 
 ### Accent (state only)
 - **Mint Pulse** (#89ecb0): "live" indicator dot (toast, granted status-pill), diff-addition highlight. Reserved for positive/live confirmation, never a UI chrome color.
+- **Error** (#b3261e): validation/run errors only (`result-error`, `settings-error`). Never a border or background — text only, so it never competes with the One-Blue Rule for chrome.
+- **Success** (#1f7a4d): confirmation text only (`settings-saved`, granted status-pill).
 
 ### Named Rules
 **The One-Blue Rule.** Every interactive/primary surface uses cobalt or iris-blue — never a second brand hue. If a screen needs a second accent, that's a sign the interaction, not the palette, needs rethinking.
