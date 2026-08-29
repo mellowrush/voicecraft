@@ -184,10 +184,17 @@ button:focus-visible {
 .profile-item.selected .profile-name {
   color: var(--color-midnight-iris);
 }
+.profile-info {
+  min-width: 0;
+  flex: 1;
+}
 .profile-name {
   font-weight: 500;
   font-size: 13px;
   color: var(--color-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .profile-desc {
   font-size: 10px;
