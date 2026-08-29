@@ -833,7 +833,7 @@ body:has(.onboarding) {
   padding: 5px 10px;
   border-radius: var(--radius-full);
   background: var(--color-pale-slate);
-  color: var(--color-graphite);
+  color: var(--color-ink);
   margin-bottom: 14px;
   transition: background 0.2s var(--ease), color 0.2s var(--ease);
 }
@@ -846,8 +846,18 @@ body:has(.onboarding) {
 }
 .status-pill.granted {
   background: rgba(137, 236, 176, 0.25);
-  color: #1f7a4d;
+  color: var(--color-success);
 }
 .status-pill.granted .dot {
   background: var(--color-mint-pulse);
+}
+
+.onboard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.onboard-actions .btn-solid,
+.onboard-actions .btn-ghost {
+  width: 100%;
 }
