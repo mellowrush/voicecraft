@@ -10,11 +10,18 @@ vi.mock("@tauri-apps/api/window", () => ({ getCurrentWindow: vi.fn() }));
 const invokeMock = vi.mocked(invoke);
 const getCurrentWindowMock = vi.mocked(getCurrentWindow);
 const hideMock = vi.fn();
+let focusHandler: (event: { payload: boolean }) => void;
 
 beforeEach(() => {
   invokeMock.mockReset();
   hideMock.mockReset();
-  getCurrentWindowMock.mockReturnValue({ hide: hideMock } as unknown as ReturnType<typeof getCurrentWindow>);
+  getCurrentWindowMock.mockReturnValue({
+    hide: hideMock,
+    onFocusChanged: vi.fn().mockImplementation((handler: typeof focusHandler) => {
+      focusHandler = handler;
+      return Promise.resolve(() => {});
+    }),
+  } as unknown as ReturnType<typeof getCurrentWindow>);
 });
 
 afterEach(() => {
@@ -75,5 +82,23 @@ describe("OnboardingWindow", () => {
     await vi.advanceTimersByTimeAsync(5000);
 
     expect(hideMock).not.toHaveBeenCalled();
+  });
+
+  it("re-checks trust on refocus instead of trusting stale state from before", async () => {
+    let trusted = true;
+    invokeMock.mockImplementation(async (cmd: string) => {
+      if (cmd === "check_accessibility_trusted") return trusted;
+      throw new Error(`unexpected invoke: ${cmd}`);
+    });
+
+    render(<OnboardingWindow />);
+    await waitFor(() => expect(screen.getByTestId("accessibility-status")).toHaveTextContent("Granted"));
+
+    // Permission gets revoked while the (still-mounted, just hidden) window
+    // is out of view, then the hotkey path shows it again.
+    trusted = false;
+    focusHandler({ payload: true });
+
+    await waitFor(() => expect(screen.getByTestId("accessibility-status")).toHaveTextContent("Not granted"));
   });
 });

@@ -10,6 +10,20 @@ export function OnboardingWindow() {
     void checkAccessibilityTrusted().then(setTrusted);
   }, []);
 
+  // This window is a singleton that's only ever hidden/shown, never
+  // remounted — so `trusted` can go stale. If it's revoked after being
+  // granted (permission later turned off in System Settings) and the hotkey
+  // reveals the window again, re-check on focus rather than trusting
+  // whatever `trusted` was left at from the last time it was open.
+  useEffect(() => {
+    const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+      if (focused) void checkAccessibilityTrusted().then(setTrusted);
+    });
+    return () => {
+      void unlisten.then((fn) => fn());
+    };
+  }, []);
+
   // Polls while the card is up so the user doesn't have to click Recheck —
   // stops once granted, since there's nothing left to detect.
   useEffect(() => {
