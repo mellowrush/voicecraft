@@ -79,7 +79,15 @@ fn create_hidden_window(
         WindowStacking::AlwaysOnTopSystemWide => builder.always_on_top(true),
         WindowStacking::ChildOfMain => match app.get_webview_window(MAIN_WINDOW) {
             Some(main) => builder.parent(&main)?,
-            None => builder.always_on_top(true),
+            None => {
+                // Shouldn't happen — the main window comes from tauri.conf.json
+                // and exists before setup() runs. Falling back to system-wide
+                // always-on-top is better than a window nobody can find, but
+                // it's the exact behavior this window is meant to avoid, so
+                // make a regression here loud instead of silent.
+                eprintln!("voicecraft: main window not found while creating {label}; falling back to always-on-top");
+                builder.always_on_top(true)
+            }
         },
     };
 

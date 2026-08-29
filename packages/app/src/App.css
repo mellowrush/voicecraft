@@ -768,6 +768,10 @@ body:has(.onboarding) {
      window's real content height and causing overflow. */
   padding: 16px;
   display: flex;
+  /* Safety net: the window is fixed-size and non-resizable, so if content
+     ever grows past it (longer i18n copy, OS text-size/zoom), scroll rather
+     than silently clip the bottom of the card off-window. */
+  overflow-y: auto;
 }
 .onboard-card {
   width: 100%;
