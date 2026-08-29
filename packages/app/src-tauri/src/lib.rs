@@ -34,8 +34,14 @@ struct HotkeySelectionPayload {
     profile_id: Option<String>,
 }
 
-fn create_hidden_window(app: &AppHandle, label: &str, width: f64, height: f64) -> tauri::Result<()> {
-    WebviewWindowBuilder::new(app, label, WebviewUrl::App(format!("index.html?window={label}").into()))
+#[derive(Clone, Copy)]
+enum WindowPosition {
+    Fixed(f64, f64),
+    CenterOverMain,
+}
+
+fn create_hidden_window(app: &AppHandle, label: &str, width: f64, height: f64, position: WindowPosition) -> tauri::Result<()> {
+    let mut builder = WebviewWindowBuilder::new(app, label, WebviewUrl::App(format!("index.html?window={label}").into()))
         .title("Voicecraft")
         .inner_size(width, height)
         .visible(false)
@@ -43,10 +49,46 @@ fn create_hidden_window(app: &AppHandle, label: &str, width: f64, height: f64) -
         .transparent(true)
         .always_on_top(true)
         .skip_taskbar(true)
-        .resizable(false)
-        .position(80.0, 80.0)
-        .build()?;
+        .resizable(false);
+
+    if let WindowPosition::Fixed(x, y) = position {
+        builder = builder.position(x, y);
+    }
+
+    let window = builder.build()?;
+
+    if let WindowPosition::CenterOverMain = position {
+        center_over_main(app, &window);
+    }
+
     Ok(())
+}
+
+// Onboarding should appear over the main window (like a modal), not pinned to
+// a fixed screen offset. Falls back to centering on the current monitor if
+// the main window isn't around yet or hasn't been shown/focused.
+fn center_over_main(app: &AppHandle, window: &tauri::WebviewWindow) {
+    let target = app
+        .get_webview_window(MAIN_WINDOW)
+        .filter(|main| main.is_visible().unwrap_or(false) || main.is_focused().unwrap_or(false))
+        .and_then(|main| {
+            let main_pos = main.outer_position().ok()?;
+            let main_size = main.outer_size().ok()?;
+            let win_size = window.outer_size().ok()?;
+            Some(tauri::PhysicalPosition::new(
+                main_pos.x + (main_size.width as i32 - win_size.width as i32) / 2,
+                main_pos.y + (main_size.height as i32 - win_size.height as i32) / 2,
+            ))
+        });
+
+    match target {
+        Some(pos) => {
+            let _ = window.set_position(pos);
+        }
+        None => {
+            let _ = window.center();
+        }
+    }
 }
 
 fn show_and_focus(app: &AppHandle, label: &str) {
@@ -147,9 +189,14 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            create_hidden_window(app.handle(), HUD_WINDOW, 320.0, 200.0)?;
-            create_hidden_window(app.handle(), ONBOARDING_WINDOW, 360.0, 420.0)?;
+            create_hidden_window(app.handle(), HUD_WINDOW, 320.0, 200.0, WindowPosition::Fixed(80.0, 80.0))?;
+            create_hidden_window(app.handle(), ONBOARDING_WINDOW, 360.0, 420.0, WindowPosition::CenterOverMain)?;
             build_tray(app.handle())?;
+
+            if !is_accessibility_trusted() {
+                show_and_focus(app.handle(), ONBOARDING_WINDOW);
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
