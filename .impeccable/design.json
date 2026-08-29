@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-28T18:12:51Z",
+  "title": "Design System: Voicecraft",
+  "extensions": {
+    "colorMeta": {
+      "iris-blue": { "role": "primary", "displayName": "Iris Blue", "canonical": "#3161df", "tonalRamp": ["#0a1a42", "#13307c", "#1b45b1", "#2b5cde", "#6085e6", "#91aaee", "#bdccf5", "#e9eefc"] },
+      "cobalt": { "role": "primary", "displayName": "Cobalt", "canonical": "#306fe8", "tonalRamp": ["#081d45", "#0e3581", "#144cb8", "#2266e7", "#598ced", "#8caff2", "#bacff7", "#e8effc"] },
+      "error": { "role": "accent", "displayName": "Error", "canonical": "#b3261e", "tonalRamp": ["#3d0c08", "#701710", "#9f2117", "#c92b1f", "#dd6053", "#e9958c", "#f2c1bb", "#faeae8"] },
+      "success": { "role": "accent", "displayName": "Success", "canonical": "#1f7a4d", "tonalRamp": ["#0a2d1c", "#125536", "#197c4f", "#20a367", "#57c18c", "#8fd8ae", "#c4ebd3", "#e9f8ef"] },
+      "midnight-iris": { "role": "primary", "displayName": "Midnight Iris", "canonical": "#2c65d3", "tonalRamp": ["#0d1e3f", "#193976", "#2351a9", "#346bd5", "#6790df", "#96b2e9", "#c0d1f2", "#eaf0fb"] },
+      "mint-pulse": { "role": "accent", "displayName": "Mint Pulse", "canonical": "#89ecb0", "tonalRamp": ["#0b4220", "#147b3c", "#1cb056", "#2cdd72", "#61e695", "#91edb5", "#bdf4d3", "#e9fbf0"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#272c30", "tonalRamp": ["#22272a", "#40484f", "#5b6771", "#788691", "#9aa4ad", "#b9c0c6", "#d5d9dd", "#f1f2f4"] },
+      "graphite": { "role": "neutral", "displayName": "Graphite", "canonical": "#60737a", "tonalRamp": ["#22282b", "#3f4b50", "#5a6c72", "#768b93", "#98a8ae", "#b8c3c7", "#d4dbdd", "#f1f3f4"] },
+      "slate-mist": { "role": "neutral", "displayName": "Slate Mist", "canonical": "#7b8e95", "tonalRamp": ["#22282a", "#404b4f", "#5b6b71", "#778b92", "#99a8ad", "#b8c2c6", "#d5dbdd", "#f1f3f4"] },
+      "dove-gray": { "role": "neutral", "displayName": "Dove Gray", "canonical": "#a6b4ba", "tonalRamp": ["#21282b", "#3e4b50", "#596b73", "#758b94", "#98a8af", "#b7c2c7", "#d4dbde", "#f1f3f4"] },
+      "pale-slate": { "role": "neutral", "displayName": "Pale Slate", "canonical": "#e3e8ea", "tonalRamp": ["#21292c", "#3d4c52", "#576c75", "#738c96", "#96a9b0", "#b6c3c8", "#d3dbde", "#f0f3f4"] },
+      "lavender-mist": { "role": "neutral", "displayName": "Lavender Mist", "canonical": "#f0f5fe", "tonalRamp": ["#051d48", "#093686", "#0d4dbf", "#1966f0", "#538cf4", "#87aff7", "#b7cffa", "#e7effd"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Wordmark", "purpose": "Voicecraft wordmark only, gradient-filled — the one deliberately expressive mark in the system." },
+      "title": { "displayName": "Title", "purpose": "Modal headings, active-profile name, card titles." },
+      "body": { "displayName": "Body", "purpose": "Compose textareas, result panels, HUD result text, prose copy." },
+      "label": { "displayName": "Label", "purpose": "Structural annotation — section/panel/field labels, HUD profile tag, status pill. Never prose." },
+      "micro": { "displayName": "Micro", "purpose": "Chrome text — hints, edit affordances, keyboard-shortcut tags, list descriptions." }
+    },
+    "shadows": [
+      { "name": "ambient-rest", "value": "rgba(63, 70, 75, 0.1) 0px 1px 3px 0px, rgba(63, 70, 75, 0.1) 0px 0px 0px 1px", "purpose": "In-window panels at rest (sidebar, main) — barely-there lift off the canvas." },
+      { "name": "floating", "value": "rgba(63, 70, 75, 0.1) 0px 21px 44px -32px, rgba(39, 44, 48, 0.2) 0px 26px 30px -23px, rgba(39, 44, 48, 0.05) 0px 14px 40px 0px, rgba(39, 44, 48, 0.08) 0px 0px 0px 1px", "purpose": "Surfaces that visually detach and float above other windows: HUD, modal, toast, onboarding card." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Default easing for every transition in the system — hover, focus, modal/toast enter." }
+    ],
+    "breakpoints": []
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Run/save action — cobalt pill, generous padding, deliberate press.",
+      "html": "<button class=\"ds-btn-primary\">Rewrite</button>",
+      "css": ".ds-btn-primary { background: #306fe8; color: #ffffff; border: none; font-size: 13px; font-weight: 500; padding: 9px 22px; border-radius: 9999px; cursor: pointer; font-family: Inter, ui-sans-serif, system-ui, sans-serif; transition: background 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: #2c65d3; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(49,97,223,0.12); } .ds-btn-primary:disabled { opacity: 0.6; cursor: default; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Cancel/dismiss action inside modals.",
+      "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
+      "css": ".ds-btn-ghost { background: transparent; border: none; color: #60737a; font-size: 13px; padding: 8px 16px; border-radius: 9999px; cursor: pointer; font-family: Inter, ui-sans-serif, system-ui, sans-serif; transition: color 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-btn-ghost:hover { color: #272c30; }"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "button-icon",
+      "description": "Compact 26px control — settings, copy, new-profile trigger.",
+      "html": "<button class=\"ds-btn-icon\" aria-label=\"Settings\">&#9881;</button>",
+      "css": ".ds-btn-icon { width: 26px; height: 26px; border-radius: 6px; border: 1px solid #e3e8ea; background: transparent; color: #60737a; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s cubic-bezier(0.4,0,0.2,1), color 0.15s cubic-bezier(0.4,0,0.2,1); } .ds-btn-icon:hover { border-color: #3161df; color: #3161df; } .ds-btn-icon:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(49,97,223,0.12); }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "nav",
+      "refersTo": "mode-toggle",
+      "description": "Two-way mode switcher (Rewrite / Generate) — pill track with solid-fill active state.",
+      "html": "<div class=\"ds-segmented\"><button class=\"ds-segmented-btn is-active\">Rewrite</button><button class=\"ds-segmented-btn\">Generate</button></div>",
+      "css": ".ds-segmented { display: flex; gap: 2px; background: #f0f5fe; border-radius: 9999px; padding: 3px; width: fit-content; } .ds-segmented-btn { border: none; background: transparent; color: #60737a; font-size: 12px; font-weight: 500; padding: 6px 16px; border-radius: 9999px; cursor: pointer; font-family: Inter, ui-sans-serif, system-ui, sans-serif; transition: background 0.2s cubic-bezier(0.4,0,0.2,1), color 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-segmented-btn.is-active { background: #306fe8; color: #ffffff; box-shadow: rgba(63,70,75,0.1) 0px 1px 3px 0px, rgba(63,70,75,0.1) 0px 0px 0px 1px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Context field / compose textarea — shared focus signature across the app.",
+      "html": "<input class=\"ds-input\" placeholder=\"Formal business email\" />",
+      "css": ".ds-input { width: 100%; font-size: 12px; padding: 9px 13px; border: 1px solid #e3e8ea; border-radius: 6px; color: #272c30; font-family: Inter, ui-sans-serif, system-ui, sans-serif; } .ds-input:focus { outline: none; border-color: #3161df; box-shadow: 0 0 0 3px rgba(49,97,223,0.12); } .ds-input::placeholder { color: #7b8e95; }"
+    },
+    {
+      "name": "List Item",
+      "kind": "custom",
+      "refersTo": "profile-item",
+      "description": "Voice-profile row in the sidebar — quiet at rest, hover reveals an edit affordance.",
+      "html": "<button class=\"ds-list-item is-selected\"><span><span class=\"ds-list-item-name\">Concise Editor</span><span class=\"ds-list-item-desc\">Trims filler, keeps meaning</span></span><span class=\"ds-list-item-edit\">Edit</span></button>",
+      "css": ".ds-list-item { width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 9px 11px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; font-family: Inter, ui-sans-serif, system-ui, sans-serif; transition: background 0.15s cubic-bezier(0.4,0,0.2,1), border-color 0.15s cubic-bezier(0.4,0,0.2,1); } .ds-list-item:hover, .ds-list-item.is-selected { background: #f0f5fe; } .ds-list-item.is-selected { border-color: #3161df; } .ds-list-item-name { font-weight: 500; font-size: 13px; color: #272c30; display: block; } .ds-list-item-desc { font-size: 10px; color: #7b8e95; } .ds-list-item-edit { opacity: 0; font-size: 12px; color: #7b8e95; transition: opacity 0.15s cubic-bezier(0.4,0,0.2,1); } .ds-list-item:hover .ds-list-item-edit { opacity: 1; }"
+    },
+    {
+      "name": "Floating Card",
+      "kind": "card",
+      "refersTo": "hud",
+      "description": "The floating HUD/onboarding/modal surface — the system's one 'above the OS' elevation state.",
+      "html": "<div class=\"ds-floating-card\"><p>Floating surface content</p></div>",
+      "css": ".ds-floating-card { background: #ffffff; border-radius: 10px; border: 1px solid #e3e8ea; padding: 14px 16px; box-shadow: rgba(63,70,75,0.1) 0px 21px 44px -32px, rgba(39,44,48,0.2) 0px 26px 30px -23px, rgba(39,44,48,0.05) 0px 14px 40px 0px, rgba(39,44,48,0.08) 0px 0px 0px 1px; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }"
+    },
+    {
+      "name": "Status Pill",
+      "kind": "chip",
+      "refersTo": "status-pill",
+      "description": "Mono-labeled state badge — pale-slate at rest, mint-tinted once a condition (e.g. permission) is met.",
+      "html": "<div class=\"ds-status-pill is-granted\"><span class=\"ds-status-dot\"></span><span>Granted</span></div>",
+      "css": ".ds-status-pill { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 10.5px; font-weight: 500; letter-spacing: 0.03em; text-transform: uppercase; padding: 5px 10px; border-radius: 9999px; background: #e3e8ea; color: #60737a; transition: background 0.2s cubic-bezier(0.4,0,0.2,1), color 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-status-dot { width: 6px; height: 6px; border-radius: 50%; background: #a6b4ba; } .ds-status-pill.is-granted { background: rgba(137,236,176,0.25); color: #1f7a4d; } .ds-status-pill.is-granted .ds-status-dot { background: #89ecb0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Studio Cockpit",
+    "overview": "Voicecraft reads as an instrument panel built by hand, not manufactured by a design team: the calm legibility of a cockpit (one accent color, everything scannable mid-task, no decoration competing for attention) paired with the warmth of a studio notebook (a serif gradient wordmark as a handcrafted signature, monospace labels as marginal annotations rather than corporate section headers). It is precise, calm, and trustworthy — built by a careful engineer for their own daily use, not marketed to a broader audience.\n\nThe system explicitly rejects generic SaaS-dashboard grammar: no hero-metric tiles, no gradient body text, no tiny uppercase eyebrows stacked above every section \"because landing pages do this,\" no numbered-step scaffolding unless the content is a genuine sequence (onboarding's 3-step Accessibility grant is a real sequence; nothing else on these screens should copy that pattern by reflex).",
+    "keyCharacteristics": [
+      "One accent (cobalt/iris-blue) carries all primary actions and focus state; nothing else competes for that role.",
+      "Ambient elevation, not structural: panels sit flat at rest, shadow appears only when something floats above the OS chrome (HUD, modals, toast).",
+      "Monospace, uppercase, wide-tracked labels mark structure (section labels, panel labels, field labels) — used as quiet annotation, not decoration.",
+      "A single serif/gradient wordmark is the one deliberately expressive mark in an otherwise restrained, sans-serif system."
+    ],
+    "rules": [
+      { "name": "The One-Blue Rule", "body": "Every interactive/primary surface uses cobalt or iris-blue — never a second brand hue. If a screen needs a second accent, that's a sign the interaction, not the palette, needs rethinking.", "section": "colors" },
+      { "name": "The Mono-Is-Structure Rule", "body": "Monospace type never carries prose — only short, uppercase, tracked labels that annotate structure (a section, a field, a shortcut). The moment mono type wraps to a second line, it's the wrong font for that content.", "section": "typography" },
+      { "name": "The Floating-Only Rule", "body": "shadow-xl is reserved for surfaces that visually detach from the app (HUD, modal, toast, onboarding). Never apply it to in-window panels at rest — that's what ambient shadow is for.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do keep cobalt/iris-blue as the only interactive accent across window app, HUD, and onboarding — one voice, three surfaces.",
+      "Do use ambient shadow for in-window panels and floating shadow only for elements that overlay other apps (HUD, modal, toast, onboarding).",
+      "Do keep mono/uppercase/tracked type reserved for short structural labels, never prose.",
+      "Do give primary actions generous, deliberate padding (pill CTAs, 22-24px card padding) even where list rows stay compact for scanability — spacious and deliberate is the target character for buttons, cards, and modals.",
+      "Do state status, permissions, and errors plainly (see onboarding's Accessibility copy) — no marketing softening."
+    ],
+    "donts": [
+      "Don't introduce a second brand hue for \"primary\" actions — that's the One-Blue Rule.",
+      "Don't use hero-metric tiles, gradient body text, or tiny uppercase eyebrow labels stacked above every section — generic SaaS-dashboard grammar this system explicitly rejects.",
+      "Don't add numbered-step scaffolding outside a genuine sequence — onboarding's 3-step grant flow earns it because it's a real ordered process, nothing else should copy the pattern by reflex.",
+      "Don't apply shadow-xl to panels at rest inside the window app — that shadow is reserved for surfaces floating above other windows.",
+      "Don't stack nested cards or repeat identical icon+heading+text card grids — not part of this system's vocabulary today, and shouldn't be introduced as a default."
+    ]
+  }
+}
