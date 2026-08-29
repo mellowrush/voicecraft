@@ -27,7 +27,15 @@ export function OnboardingWindow() {
     <div className="onboarding">
       <div className="onboard-card">
         <div className="onboard-icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3161df" strokeWidth="1.7">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#3161df"
+            strokeWidth="1.7"
+            aria-hidden="true"
+          >
             <rect x="5" y="11" width="14" height="9" rx="2" />
             <path d="M8 11V7a4 4 0 0 1 8 0v4" />
           </svg>
@@ -39,25 +47,41 @@ export function OnboardingWindow() {
         </p>
         <ol className="onboard-steps">
           <li>
-            <span className="step-num">1</span> Click &ldquo;Open Settings&rdquo; below
+            <span className="step-num" aria-hidden="true">
+              1
+            </span>{" "}
+            Click &ldquo;Open Settings&rdquo; below
           </li>
           <li>
-            <span className="step-num">2</span> Turn on Voicecraft under Accessibility
+            <span className="step-num" aria-hidden="true">
+              2
+            </span>{" "}
+            Turn on Voicecraft under Accessibility
           </li>
           <li>
-            <span className="step-num">3</span> Come back and click &ldquo;Recheck&rdquo;
+            <span className="step-num" aria-hidden="true">
+              3
+            </span>{" "}
+            Come back and click &ldquo;Recheck&rdquo;
           </li>
         </ol>
-        <div className={`status-pill${trusted ? " granted" : ""}`} data-testid="accessibility-status">
-          <span className="dot" />
+        <div
+          className={`status-pill${trusted ? " granted" : ""}`}
+          data-testid="accessibility-status"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="dot" aria-hidden="true" />
           <span>{trusted ? "Granted" : "Not granted"}</span>
         </div>
-        <button className="btn-primary" onClick={() => void openAccessibilityPrefs()}>
-          Open Settings
-        </button>
-        <button className="btn-secondary" onClick={() => void recheck()}>
-          Recheck
-        </button>
+        <div className="onboard-actions">
+          <button className="btn-solid" onClick={() => void openAccessibilityPrefs()}>
+            Open Settings
+          </button>
+          <button className="btn-ghost" onClick={() => void recheck()}>
+            Recheck
+          </button>
+        </div>
       </div>
     </div>
   );
