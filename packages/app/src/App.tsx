@@ -8,8 +8,13 @@ import { Sidebar } from "./components/Sidebar";
 import { MainPanel } from "./components/MainPanel";
 import { ProfileModal } from "./components/ProfileModal";
 import { SettingsModal } from "./components/SettingsModal";
+// PROTOTYPE (issue #42) — remove this import and the branch below once a
+// variant is chosen. Never ships: gated on import.meta.env.DEV.
+import { SettingsModalPrototype } from "./components/SettingsModal.prototype";
 import { Toast } from "./components/Toast";
 import "./App.css";
+
+const showSettingsPrototype = import.meta.env.DEV && new URLSearchParams(window.location.search).has("variant");
 
 function App() {
   const engine = useMemo(() => createEngine({ provider: tauriProvider }), []);
@@ -85,7 +90,11 @@ function App() {
         onCancel={() => app.setEditingProfileId(null)}
       />
 
-      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {showSettingsPrototype ? (
+        <SettingsModalPrototype open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      ) : (
+        <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      )}
 
       <Toast message={toast} />
     </div>
