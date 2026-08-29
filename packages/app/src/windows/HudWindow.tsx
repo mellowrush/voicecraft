@@ -97,9 +97,9 @@ export function HudWindow() {
             : "Voicecraft"}
         </span>
       </div>
-      <div className="hud-body">
+      <div className="hud-body" role="status" aria-live="polite">
         {state.status === "loading" && (
-          <div className="hud-skeleton" data-testid="hud-skeleton">
+          <div className="hud-skeleton" data-testid="hud-skeleton" aria-hidden="true">
             <div className="hud-skel-line" style={{ width: "95%" }} />
             <div className="hud-skel-line" style={{ width: "80%" }} />
             <div className="hud-skel-line" style={{ width: "60%" }} />
@@ -110,11 +110,11 @@ export function HudWindow() {
       </div>
       {state.status === "ready" && (
         <div className="hud-actions">
-          <button className="hud-btn hud-accept" onClick={accept}>
-            Accept <span className="hud-kbd">↵</span>
+          <button className="hud-btn hud-accept" aria-keyshortcuts="Enter" onClick={accept}>
+            Accept <span className="hud-kbd" aria-hidden="true">↵</span>
           </button>
-          <button className="hud-btn hud-reject" onClick={reject}>
-            Reject <span className="hud-kbd">Esc</span>
+          <button className="hud-btn hud-reject" aria-keyshortcuts="Escape" onClick={reject}>
+            Reject <span className="hud-kbd" aria-hidden="true">Esc</span>
           </button>
         </div>
       )}

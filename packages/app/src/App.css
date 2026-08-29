@@ -748,6 +748,10 @@ body:has(.onboarding) {
   font-size: 9px;
   opacity: 0.75;
 }
+.hud-btn:focus-visible {
+  outline: 2px solid var(--color-iris-blue);
+  outline-offset: 2px;
+}
 
 /* ---------- Onboarding window ---------- */
 .onboarding {
