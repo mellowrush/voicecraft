@@ -19,6 +19,7 @@ export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit }
       className={`profile-item${profile.id === selectedProfileId ? " selected" : ""}`}
       role="button"
       tabIndex={0}
+      title={profile.name}
       onClick={() => onSelect(profile.id)}
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -27,7 +28,7 @@ export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit }
         }
       }}
     >
-      <div>
+      <div className="profile-info">
         <div className="profile-name">{profile.name}</div>
         <div className="profile-desc">{profile.description}</div>
       </div>
