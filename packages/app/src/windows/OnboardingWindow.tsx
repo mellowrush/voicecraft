@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { checkAccessibilityTrusted, openAccessibilityPrefs } from "../lib/hotkeyClient";
 import "../App.css";
 
@@ -17,6 +18,19 @@ export function OnboardingWindow() {
       void checkAccessibilityTrusted().then(setTrusted);
     }, 1500);
     return () => clearInterval(interval);
+  }, [trusted]);
+
+  // Nothing else ever dismisses this window once permission is granted — it
+  // shows "Granted" and just sits there forever otherwise, which reads as
+  // the popup (or the Recheck button) not working. Give the confirmation a
+  // beat to register, then close it, whether "Granted" came from the poll
+  // above or a manual Recheck click.
+  useEffect(() => {
+    if (!trusted) return;
+    const timer = setTimeout(() => {
+      void getCurrentWindow().hide();
+    }, 900);
+    return () => clearTimeout(timer);
   }, [trusted]);
 
   async function recheck() {
