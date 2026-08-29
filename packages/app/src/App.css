@@ -1,6 +1,6 @@
 :root {
   --color-iris-blue: #3161df;
-  --color-cobalt: #3e79ea;
+  --color-cobalt: #306fe8;
   --color-mint-pulse: #89ecb0;
   --color-midnight-iris: #2c65d3;
   --color-ink: #272c30;
@@ -706,6 +706,10 @@ body:has(.onboarding) {
   font-family: var(--font-mono);
   font-size: 9px;
   opacity: 0.75;
+}
+.hud-btn:focus-visible {
+  outline: 2px solid var(--color-iris-blue);
+  outline-offset: 2px;
 }
 
 /* ---------- Onboarding window ---------- */
