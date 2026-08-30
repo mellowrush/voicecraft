@@ -40,20 +40,56 @@ enum WindowPosition {
     CenterOverMain,
 }
 
-fn create_hidden_window(app: &AppHandle, label: &str, width: f64, height: f64, position: WindowPosition) -> tauri::Result<()> {
+// HUD is triggered from anywhere via the global hotkey and must float over
+// whatever app the user is currently in, so it needs a real OS-wide
+// always-on-top level. Onboarding is an in-app prompt — it should only ever
+// stack above Voicecraft's own main window, not every other app on screen.
+#[derive(Clone, Copy)]
+enum WindowStacking {
+    AlwaysOnTopSystemWide,
+    ChildOfMain,
+}
+
+fn create_hidden_window(
+    app: &AppHandle,
+    label: &str,
+    width: f64,
+    height: f64,
+    position: WindowPosition,
+    stacking: WindowStacking,
+) -> tauri::Result<()> {
     let mut builder = WebviewWindowBuilder::new(app, label, WebviewUrl::App(format!("index.html?window={label}").into()))
         .title("Voicecraft")
         .inner_size(width, height)
         .visible(false)
         .decorations(false)
         .transparent(true)
-        .always_on_top(true)
+        // Chrome is entirely custom-drawn (CSS box-shadow on the card) — the
+        // native OS window shadow would otherwise also render around the
+        // transparent window's rectangular bounds, doubling up.
+        .shadow(false)
         .skip_taskbar(true)
         .resizable(false);
 
     if let WindowPosition::Fixed(x, y) = position {
         builder = builder.position(x, y);
     }
+
+    builder = match stacking {
+        WindowStacking::AlwaysOnTopSystemWide => builder.always_on_top(true),
+        WindowStacking::ChildOfMain => match app.get_webview_window(MAIN_WINDOW) {
+            Some(main) => builder.parent(&main)?,
+            None => {
+                // Shouldn't happen — the main window comes from tauri.conf.json
+                // and exists before setup() runs. Falling back to system-wide
+                // always-on-top is better than a window nobody can find, but
+                // it's the exact behavior this window is meant to avoid, so
+                // make a regression here loud instead of silent.
+                eprintln!("voicecraft: main window not found while creating {label}; falling back to always-on-top");
+                builder.always_on_top(true)
+            }
+        },
+    };
 
     let window = builder.build()?;
 
@@ -189,8 +225,22 @@ pub fn run() {
                 .build(),
         )
         .setup(|app| {
-            create_hidden_window(app.handle(), HUD_WINDOW, 320.0, 200.0, WindowPosition::Fixed(80.0, 80.0))?;
-            create_hidden_window(app.handle(), ONBOARDING_WINDOW, 360.0, 420.0, WindowPosition::CenterOverMain)?;
+            create_hidden_window(
+                app.handle(),
+                HUD_WINDOW,
+                320.0,
+                200.0,
+                WindowPosition::Fixed(80.0, 80.0),
+                WindowStacking::AlwaysOnTopSystemWide,
+            )?;
+            create_hidden_window(
+                app.handle(),
+                ONBOARDING_WINDOW,
+                360.0,
+                468.0,
+                WindowPosition::CenterOverMain,
+                WindowStacking::ChildOfMain,
+            )?;
             build_tray(app.handle())?;
 
             if !is_accessibility_trusted() {

@@ -762,9 +762,16 @@ body:has(.onboarding) {
 
 /* ---------- Onboarding window ---------- */
 .onboarding {
-  width: calc(100% - 32px);
-  margin: 16px;
+  width: 100%;
+  /* Padding, not margin — margin here would collapse through #root/body
+     (neither has a border/padding to contain it), silently inflating the
+     window's real content height and causing overflow. */
+  padding: 16px;
   display: flex;
+  /* Safety net: the window is fixed-size and non-resizable, so if content
+     ever grows past it (longer i18n copy, OS text-size/zoom), scroll rather
+     than silently clip the bottom of the card off-window. */
+  overflow-y: auto;
 }
 .onboard-card {
   width: 100%;
