@@ -27,7 +27,11 @@ _Avoid_: Client, service
 
 **Provider**:
 The injected function `(prompt, opts) => text/stream` an app supplies to an Engine — the seam between core and a specific AI backend. A Provider only ever receives a finished prompt string; it never sees a Voice Profile, and it owns its own auth/secrets entirely opaquely to core.
-_Avoid_: Model, backend, adapter
+_Avoid_: Model, backend, adapter. Not to be confused with **AI Vendor** — which OpenAI/Anthropic-shaped HTTP API a Provider implementation happens to call is entirely inside the Provider, invisible to core.
+
+**AI Vendor**:
+Which AI company's API an app's Provider implementation calls — `openai` or `anthropic` today. Purely an app-level concern (vendor selection, per-vendor API key, per-vendor model default all live in the Mac app's Rust/Settings layer); core's Engine/Provider contract never sees or branches on it.
+_Avoid_: Provider, backend, model (a Vendor has a default model, but "model" alone is ambiguous with the Voice Profile's Examples-driven behavior)
 
 **EngineError**:
 The single typed error shape (`code` + optional `cause`/`retryAfterMs`) every Engine failure normalizes into, regardless of what a Provider actually threw — the stable surface apps build retry/error UI against.
