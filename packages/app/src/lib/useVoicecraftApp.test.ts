@@ -15,8 +15,8 @@ function makeFileStore(initial = "") {
   };
 }
 
-function seededStore(lastUsedProfileId: string | null = null) {
-  return serializeProfilesFile({ profiles: predefinedProfiles, lastUsedProfileId });
+function seededStore(lastUsedProfileId: string | null = null, activeVendor: "openai" | "anthropic" = "openai") {
+  return serializeProfilesFile({ profiles: predefinedProfiles, lastUsedProfileId, activeVendor });
 }
 
 function makeEngine(generate: Engine["generate"]): Engine {
@@ -56,6 +56,29 @@ describe("useVoicecraftApp", () => {
       expect(writeFile).toHaveBeenCalledWith(
         seededStore(predefinedProfiles[1].id),
       ),
+    );
+  });
+
+  it("resumes the active vendor from the store on load", async () => {
+    const { readFile, writeFile } = makeFileStore(seededStore(null, "anthropic"));
+    const engine = makeEngine(vi.fn());
+
+    const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
+
+    await waitFor(() => expect(result.current.activeVendor).toBe("anthropic"));
+  });
+
+  it("persists the active vendor into the same store when it changes", async () => {
+    const { readFile, writeFile } = makeFileStore(seededStore());
+    const engine = makeEngine(vi.fn());
+
+    const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
+    await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+
+    act(() => result.current.setActiveVendor("anthropic"));
+
+    await waitFor(() =>
+      expect(writeFile).toHaveBeenCalledWith(seededStore(result.current.selectedProfileId, "anthropic")),
     );
   });
 
