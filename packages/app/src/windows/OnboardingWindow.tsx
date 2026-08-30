@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { checkAccessibilityTrusted, openAccessibilityPrefs } from "../lib/hotkeyClient";
 import "../App.css";
 
@@ -9,6 +10,20 @@ export function OnboardingWindow() {
     void checkAccessibilityTrusted().then(setTrusted);
   }, []);
 
+  // This window is a singleton that's only ever hidden/shown, never
+  // remounted — so `trusted` can go stale. If it's revoked after being
+  // granted (permission later turned off in System Settings) and the hotkey
+  // reveals the window again, re-check on focus rather than trusting
+  // whatever `trusted` was left at from the last time it was open.
+  useEffect(() => {
+    const unlisten = getCurrentWindow().onFocusChanged(({ payload: focused }) => {
+      if (focused) void checkAccessibilityTrusted().then(setTrusted);
+    });
+    return () => {
+      void unlisten.then((fn) => fn());
+    };
+  }, []);
+
   // Polls while the card is up so the user doesn't have to click Recheck —
   // stops once granted, since there's nothing left to detect.
   useEffect(() => {
@@ -17,6 +32,19 @@ export function OnboardingWindow() {
       void checkAccessibilityTrusted().then(setTrusted);
     }, 1500);
     return () => clearInterval(interval);
+  }, [trusted]);
+
+  // Nothing else ever dismisses this window once permission is granted — it
+  // shows "Granted" and just sits there forever otherwise, which reads as
+  // the popup (or the Recheck button) not working. Give the confirmation a
+  // beat to register, then close it, whether "Granted" came from the poll
+  // above or a manual Recheck click.
+  useEffect(() => {
+    if (!trusted) return;
+    const timer = setTimeout(() => {
+      void getCurrentWindow().hide();
+    }, 900);
+    return () => clearTimeout(timer);
   }, [trusted]);
 
   async function recheck() {

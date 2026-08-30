@@ -44,10 +44,15 @@ enum WindowPosition {
 // whatever app the user is currently in, so it needs a real OS-wide
 // always-on-top level. Onboarding is an in-app prompt — it should only ever
 // stack above Voicecraft's own main window, not every other app on screen.
+// That's just "don't set always-on-top" — a normal window already only
+// stays in front of its own app's other windows and drops behind whatever
+// app the user switches to. (`.parent()` was tried here and reverted: an
+// AppKit child-window relationship is unverifiable in this environment and
+// carries known key-window/focus quirks not worth the risk for this.)
 #[derive(Clone, Copy)]
 enum WindowStacking {
     AlwaysOnTopSystemWide,
-    ChildOfMain,
+    Normal,
 }
 
 fn create_hidden_window(
@@ -75,21 +80,9 @@ fn create_hidden_window(
         builder = builder.position(x, y);
     }
 
-    builder = match stacking {
-        WindowStacking::AlwaysOnTopSystemWide => builder.always_on_top(true),
-        WindowStacking::ChildOfMain => match app.get_webview_window(MAIN_WINDOW) {
-            Some(main) => builder.parent(&main)?,
-            None => {
-                // Shouldn't happen — the main window comes from tauri.conf.json
-                // and exists before setup() runs. Falling back to system-wide
-                // always-on-top is better than a window nobody can find, but
-                // it's the exact behavior this window is meant to avoid, so
-                // make a regression here loud instead of silent.
-                eprintln!("voicecraft: main window not found while creating {label}; falling back to always-on-top");
-                builder.always_on_top(true)
-            }
-        },
-    };
+    if let WindowStacking::AlwaysOnTopSystemWide = stacking {
+        builder = builder.always_on_top(true);
+    }
 
     let window = builder.build()?;
 
@@ -239,7 +232,7 @@ pub fn run() {
                 360.0,
                 468.0,
                 WindowPosition::CenterOverMain,
-                WindowStacking::ChildOfMain,
+                WindowStacking::Normal,
             )?;
             build_tray(app.handle())?;
 
