@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { RateLimitError, type Provider } from "@voicecraft/core";
+import { readProfilesFile } from "./tauriProfileFile";
+import { parseProfilesFile } from "./profileStore";
 
 // Shape the Rust `call_provider` command rejects with (see src-tauri).
 export type ProviderCallError =
@@ -35,10 +37,14 @@ export function toEngineFacingError(err: unknown): Error {
 }
 
 // Satisfies core's `Provider` type by proxying the actual HTTP call through
-// the Rust backend — the API key never enters this (webview) context.
+// the Rust backend — the API key never enters this (webview) context. Reads
+// the active vendor fresh from the shared profiles file (not React state)
+// on every call, so it stays correct in the HUD's separate webview too
+// (#42) without any cross-window state-syncing.
 export const tauriProvider: Provider = async (prompt) => {
   try {
-    const text = await invoke<string>("call_provider", { prompt });
+    const { activeVendor } = parseProfilesFile(await readProfilesFile());
+    const text = await invoke<string>("call_provider", { prompt, vendor: activeVendor });
     return { text };
   } catch (err) {
     throw toEngineFacingError(err);

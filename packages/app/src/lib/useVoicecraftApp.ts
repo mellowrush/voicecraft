@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Engine, EngineError, Mode, VoiceProfile } from "@voicecraft/core";
 import { loadProfiles, serializeProfilesFile, type ReadFile, type WriteFile } from "./profileStore";
 import { engineErrorMessage } from "./engineErrorMessage";
+import { DEFAULT_VENDOR, type Vendor } from "./vendor";
 
 export type RunStatus =
   | { status: "idle" }
@@ -37,6 +38,7 @@ function uniqueId(base: string, existingIds: Set<string>): string {
 export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftAppOptions) {
   const [profiles, setProfiles] = useState<VoiceProfile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [activeVendor, setActiveVendor] = useState<Vendor>(DEFAULT_VENDOR);
   const [mode, setModeState] = useState<Mode>("rewrite");
   const [context, setContext] = useState("");
   const [inputText, setInputText] = useState("");
@@ -51,6 +53,7 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
       if (cancelled) return;
       setProfiles(store.profiles);
       setSelectedProfileId(store.lastUsedProfileId ?? store.profiles[0]?.id ?? null);
+      setActiveVendor(store.activeVendor);
       setLoaded(true);
     });
     return () => {
@@ -60,14 +63,15 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Single writer for the profiles store — keeps `profiles` and
+  // Single writer for the profiles store — keeps `profiles`,
   // `selectedProfileId` (the hotkey flow's last-used profile, per issue
-  // #21) persisted together in one file, so there's no separate write path
-  // to keep in sync with this one.
+  // #21) and `activeVendor` (#42, read by the HUD's separate webview via
+  // this same file) persisted together in one file, so there's no separate
+  // write path to keep in sync with this one.
   useEffect(() => {
     if (!loaded) return;
-    void writeFile(serializeProfilesFile({ profiles, lastUsedProfileId: selectedProfileId }));
-  }, [loaded, profiles, selectedProfileId, writeFile]);
+    void writeFile(serializeProfilesFile({ profiles, lastUsedProfileId: selectedProfileId, activeVendor }));
+  }, [loaded, profiles, selectedProfileId, activeVendor, writeFile]);
 
   const selectedProfile = useMemo(
     () => profiles.find((p) => p.id === selectedProfileId) ?? null,
@@ -117,6 +121,8 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
     selectedProfile,
     selectedProfileId,
     setSelectedProfileId,
+    activeVendor,
+    setActiveVendor,
     mode,
     setMode,
     context,

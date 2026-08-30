@@ -85,7 +85,12 @@ function App() {
         onCancel={() => app.setEditingProfileId(null)}
       />
 
-      <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsModal
+        open={settingsOpen}
+        activeVendor={app.activeVendor}
+        onVendorChange={app.setActiveVendor}
+        onClose={() => setSettingsOpen(false)}
+      />
 
       <Toast message={toast} />
     </div>
