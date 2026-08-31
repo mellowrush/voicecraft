@@ -5,8 +5,12 @@ Voicecraft rewrites text into a chosen voice. This context covers the core engin
 ## Language
 
 **Voice Profile**:
-The data that describes a voice to rewrite text into — an id, display name, freeform description, and optional tags/examples/constraints/language. Predefined (built-in) and custom (user-authored) voices are both just Voice Profiles; there is no separate schema or type for either.
+The data that describes a voice to rewrite text into — an id, display name, freeform description, optional tags/examples/constraints, and an optional Generation Options object of its own defaults. Predefined (built-in) and custom (user-authored) voices are both just Voice Profiles; there is no separate schema or type for either.
 _Avoid_: Character, persona, voice preset
+
+**Generation Options**:
+The structured, optional settings — target length (words), variant count, output language (unset means infer from the input), diacritics handling — that shape a single `generate()` call, layered on top of the freeform `Context` string. A Voice Profile carries a Generation Options object as its defaults; a call site can pass its own to override any of them for one generation. The same shape both directions, so "the profile's defaults" and "what a session actually sent" are never two different types.
+_Avoid_: Settings, preferences, config (too generic — this is specifically the generate()-shaping fields, not app-wide settings)
 
 **Variant**:
 One of N alternative outputs the Engine returns for a single `generate()` call, all produced from one Provider call per ADR-0007. Not to be confused with a Voice Profile — a Variant is one shape of the same rewritten/generated text, not a different voice.
