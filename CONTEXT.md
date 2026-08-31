@@ -8,6 +8,10 @@ Voicecraft rewrites text into a chosen voice. This context covers the core engin
 The data that describes a voice to rewrite text into — an id, display name, freeform description, and optional tags/examples/constraints/language. Predefined (built-in) and custom (user-authored) voices are both just Voice Profiles; there is no separate schema or type for either.
 _Avoid_: Character, persona, voice preset
 
+**Variant**:
+One of N alternative outputs the Engine returns for a single `generate()` call, all produced from one Provider call per ADR-0007. Not to be confused with a Voice Profile — a Variant is one shape of the same rewritten/generated text, not a different voice.
+_Avoid_: Option, result, alternative, response
+
 **Constraints**:
 Imperative do's-and-don'ts a Voice Profile carries (e.g. "never use profanity") that the engine must honor when rewriting, kept separate from the profile's descriptive prose.
 
