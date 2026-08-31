@@ -1,5 +1,8 @@
+import { useState } from "react";
 import type { VoiceProfile } from "@voicecraft/core";
 import { isPredefined } from "../lib/predefinedProfiles";
+import { LogoMarkByVariant, LogoVariantSwitcher, useLogoVariant } from "./logoMarkVariants.prototype";
+import "./logoMarkVariants.prototype.css";
 
 type Props = {
   profiles: VoiceProfile[];
@@ -7,9 +10,15 @@ type Props = {
   onSelect: (id: string) => void;
   onNew: () => void;
   onEdit: (id: string) => void;
+  /** PROTOTYPE (#44) — live rewrite-in-flight signal, only consumed by logo variant D. */
+  isProcessing?: boolean;
 };
 
-export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit }: Props) {
+export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit, isProcessing = false }: Props) {
+  const logoVariant = useLogoVariant();
+  // PROTOTYPE (#44) — lets you preview variant D's live-status ring without a real
+  // rewrite in flight; has no effect on any other variant.
+  const [simulateProcessing, setSimulateProcessing] = useState(false);
   const predefined = profiles.filter(isPredefined);
   const custom = profiles.filter((p) => !isPredefined(p));
 
@@ -52,29 +61,21 @@ export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit }
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <span className="wordmark">
-          <svg className="mark" viewBox="0 0 40 40" fill="none" aria-hidden="true">
-            <path
-              d="M6 8 L20 32 L34 8"
-              stroke="url(#mark-grad)"
-              strokeWidth="5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              fill="none"
-            />
-            <defs>
-              <linearGradient id="mark-grad" x1="0" y1="0" x2="0" y2="40">
-                <stop offset="0" stopColor="#5897f7" />
-                <stop offset="1" stopColor="#3872e6" />
-              </linearGradient>
-            </defs>
-          </svg>
-          Voicecraft
-        </span>
+        <LogoMarkByVariant variant={logoVariant} isProcessing={isProcessing || simulateProcessing} />
         <button className="new-btn" title="New voice profile" aria-label="New voice profile" onClick={onNew}>
           +
         </button>
       </div>
+      <LogoVariantSwitcher current={logoVariant} />
+      {logoVariant === "D" && !import.meta.env.PROD && (
+        <button
+          type="button"
+          className="proto-mark-d__sim-toggle"
+          onClick={() => setSimulateProcessing((v) => !v)}
+        >
+          {simulateProcessing ? "Stop" : "Simulate"} processing
+        </button>
+      )}
 
       <div className="sidebar-list">
         <p className="section-label">Predefined</p>

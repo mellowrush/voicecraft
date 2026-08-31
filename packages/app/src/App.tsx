@@ -60,6 +60,7 @@ function App() {
         onSelect={app.setSelectedProfileId}
         onNew={() => app.setEditingProfileId("new")}
         onEdit={(id) => app.setEditingProfileId(id)}
+        isProcessing={app.run.status === "loading"}
       />
 
       <MainPanel
