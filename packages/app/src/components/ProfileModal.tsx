@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ProfileDraft } from "../lib/useVoicecraftApp";
+import { ProfileModalExtraByVariant, useProfileOptionsVariant } from "./profileOptions.prototype";
+import "./profileOptions.prototype.css";
 
 type Props = {
   open: boolean;
@@ -12,6 +14,10 @@ export function ProfileModal({ open, initial, onSave, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const nameInputRef = useRef<HTMLInputElement>(null);
+
+  // PROTOTYPE (#65) — renders mocked Generation Options fields below the
+  // real form; doesn't affect save/cancel behavior.
+  const profileOptionsVariant = useProfileOptionsVariant();
 
   useEffect(() => {
     if (open) {
@@ -61,6 +67,7 @@ export function ProfileModal({ open, initial, onSave, onCancel }: Props) {
           placeholder="Describe the voice..."
           style={{ resize: "vertical" }}
         />
+        <ProfileModalExtraByVariant variant={profileOptionsVariant} />
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onCancel}>
             Cancel

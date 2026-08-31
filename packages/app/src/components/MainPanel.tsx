@@ -1,6 +1,8 @@
 import type { Mode, VoiceProfile } from "@voicecraft/core";
 import type { RunStatus } from "../lib/useVoicecraftApp";
 import { DiffView } from "./DiffView";
+import { ComposeOverrideByVariant, ProfileOptionsSwitcher, useProfileOptionsVariant } from "./profileOptions.prototype";
+import "./profileOptions.prototype.css";
 
 type Props = {
   profile: VoiceProfile | null;
@@ -36,6 +38,10 @@ export function MainPanel({
   const isRewrite = mode === "rewrite";
   const isLoading = run.status === "loading";
   const resultText = run.status === "success" ? run.text : "";
+
+  // PROTOTYPE (#65) — renders a mocked per-generation override affordance
+  // above the run bar; doesn't affect real generation.
+  const profileOptionsVariant = useProfileOptionsVariant();
 
   return (
     <main className="main">
@@ -153,6 +159,8 @@ export function MainPanel({
         </div>
       </div>
 
+      <ComposeOverrideByVariant variant={profileOptionsVariant} />
+
       <div className="action-bar">
         <span className="status">
           <span>{isLoading ? "Generating…" : "Ready"}</span> <span className="hint">⌘ Enter</span>
@@ -167,6 +175,8 @@ export function MainPanel({
           <span>{isRewrite ? "Rewrite" : "Generate"}</span>
         </button>
       </div>
+
+      <ProfileOptionsSwitcher current={profileOptionsVariant} />
     </main>
   );
 }
