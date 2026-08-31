@@ -9,7 +9,7 @@ use super::vendor::Vendor;
 
 const OPENAI_MODEL: &str = "gpt-4o-mini";
 // Cheap tier, matching gpt-4o-mini — see issue #42's decision.
-const ANTHROPIC_MODEL: &str = "claude-3-5-haiku-latest";
+const ANTHROPIC_MODEL: &str = "claude-haiku-4-5-20251001";
 const ANTHROPIC_MAX_TOKENS: u32 = 4096;
 const ANTHROPIC_VERSION: &str = "2023-06-01";
 
