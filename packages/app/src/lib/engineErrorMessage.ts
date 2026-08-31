@@ -8,8 +8,10 @@ export function engineErrorMessage(error: EngineError): string {
       return error.retryAfterMs
         ? `Rate limited — try again in ${Math.ceil(error.retryAfterMs / 1000)}s.`
         : "Rate limited — try again in a moment.";
-    case "provider_error":
-      return "The AI provider returned an error. Try again.";
+    case "provider_error": {
+      const detail = error.cause instanceof Error ? error.cause.message : undefined;
+      return detail ? `The AI provider returned an error: ${detail}` : "The AI provider returned an error. Try again.";
+    }
     case "aborted":
       return "Cancelled.";
     case "unknown":
