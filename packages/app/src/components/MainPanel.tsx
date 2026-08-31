@@ -40,7 +40,7 @@ export function MainPanel({
   return (
     <main className="main">
       <div className="main-header">
-        <div>
+        <div className="active-summary">
           <p className="active-name">{profile?.name ?? "No voice profile"}</p>
           <p className="active-desc">{profile?.description ?? "Create or select a voice profile to begin."}</p>
         </div>
