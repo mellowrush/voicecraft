@@ -1,8 +1,6 @@
 import type { Mode, VoiceProfile } from "@voicecraft/core";
 import type { RunStatus } from "../lib/useVoicecraftApp";
 import { DiffView } from "./DiffView";
-import { ResultVariantsByKey, ResultVariantSwitcher, useMockScenario, useResultVariant } from "./resultVariants.prototype";
-import "./resultVariants.prototype.css";
 
 type Props = {
   profile: VoiceProfile | null;
@@ -38,12 +36,6 @@ export function MainPanel({
   const isRewrite = mode === "rewrite";
   const isLoading = run.status === "loading";
   const resultText = run.status === "success" ? run.text : "";
-
-  // PROTOTYPE (#59) — swaps only the result-rendering subtree for a mocked
-  // multi-variant layout; real generation/state above is untouched.
-  const resultVariant = useResultVariant();
-  const mockScenario = useMockScenario();
-  const showResultPrototype = resultVariant !== "current";
 
   return (
     <main className="main">
@@ -89,85 +81,77 @@ export function MainPanel({
         />
       </div>
 
-      {showResultPrototype && resultVariant === "C" ? (
-        <ResultVariantsByKey variant="C" scenario={mockScenario} originalText={inputText || "Look, I've seen three of these platforms this quarter alone."} />
-      ) : (
-        <div className="compose">
-          <div className="panel">
-            <label className="panel-label" htmlFor="compose-input">
-              {isRewrite ? "Original text" : "Instruction"}
-            </label>
-            <textarea
-              id="compose-input"
-              value={inputText}
-              onChange={(e) => onInputTextChange(e.target.value)}
-              placeholder={isRewrite ? "Paste or type text to rewrite..." : "Describe what to generate..."}
-            />
-          </div>
+      <div className="compose">
+        <div className="panel">
+          <label className="panel-label" htmlFor="compose-input">
+            {isRewrite ? "Original text" : "Instruction"}
+          </label>
+          <textarea
+            id="compose-input"
+            value={inputText}
+            onChange={(e) => onInputTextChange(e.target.value)}
+            placeholder={isRewrite ? "Paste or type text to rewrite..." : "Describe what to generate..."}
+          />
+        </div>
 
-          {showResultPrototype ? (
-            <ResultVariantsByKey variant={resultVariant} scenario={mockScenario} originalText={inputText} />
-          ) : (
-            <div className="panel">
-              <div className="panel-label-row">
-                <p className="panel-label" style={{ margin: 0 }}>
-                  Result
-                </p>
-                <div className="toolbar-right">
-                  {isRewrite && (
-                    <div className="view-toggle" role="group" aria-label="View">
-                      <button
-                        className={`view-btn${view === "result" ? " active" : ""}`}
-                        aria-pressed={view === "result"}
-                        onClick={() => onViewChange("result")}
-                      >
-                        Result
-                      </button>
-                      <button
-                        className={`view-btn${view === "diff" ? " active" : ""}`}
-                        aria-pressed={view === "diff"}
-                        onClick={() => onViewChange("diff")}
-                      >
-                        Diff
-                      </button>
-                    </div>
-                  )}
+        <div className="panel">
+          <div className="panel-label-row">
+            <p className="panel-label" style={{ margin: 0 }}>
+              Result
+            </p>
+            <div className="toolbar-right">
+              {isRewrite && (
+                <div className="view-toggle" role="group" aria-label="View">
                   <button
-                    className="copy-btn"
-                    title="Copy to clipboard"
-                    aria-label="Copy to clipboard"
-                    disabled={run.status !== "success"}
-                    onClick={() => onCopy(resultText)}
+                    className={`view-btn${view === "result" ? " active" : ""}`}
+                    aria-pressed={view === "result"}
+                    onClick={() => onViewChange("result")}
                   >
-                    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-                      <rect x="7" y="7" width="10" height="10" rx="2" />
-                      <path d="M4 13V5a2 2 0 0 1 2-2h8" />
-                    </svg>
+                    Result
+                  </button>
+                  <button
+                    className={`view-btn${view === "diff" ? " active" : ""}`}
+                    aria-pressed={view === "diff"}
+                    onClick={() => onViewChange("diff")}
+                  >
+                    Diff
                   </button>
                 </div>
-              </div>
-
-              <div className="result-box" aria-live="polite">
-                {isLoading && (
-                  <div className="skeleton active" aria-hidden="true">
-                    <div className="skeleton-line" style={{ width: "95%" }} />
-                    <div className="skeleton-line" style={{ width: "88%" }} />
-                    <div className="skeleton-line" style={{ width: "60%" }} />
-                  </div>
-                )}
-                {!isLoading && run.status === "error" && <p className="result-error">{run.message}</p>}
-                {!isLoading && run.status === "success" && isRewrite && view === "diff" && (
-                  <DiffView before={inputText} after={run.text} />
-                )}
-                {!isLoading && run.status === "success" && (!isRewrite || view === "result") && (
-                  <p className="result-plain">{run.text}</p>
-                )}
-                {!isLoading && run.status === "idle" && <p className="result-placeholder">Result will appear here.</p>}
-              </div>
+              )}
+              <button
+                className="copy-btn"
+                title="Copy to clipboard"
+                aria-label="Copy to clipboard"
+                disabled={run.status !== "success"}
+                onClick={() => onCopy(resultText)}
+              >
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                  <rect x="7" y="7" width="10" height="10" rx="2" />
+                  <path d="M4 13V5a2 2 0 0 1 2-2h8" />
+                </svg>
+              </button>
             </div>
-          )}
+          </div>
+
+          <div className="result-box" aria-live="polite">
+            {isLoading && (
+              <div className="skeleton active" aria-hidden="true">
+                <div className="skeleton-line" style={{ width: "95%" }} />
+                <div className="skeleton-line" style={{ width: "88%" }} />
+                <div className="skeleton-line" style={{ width: "60%" }} />
+              </div>
+            )}
+            {!isLoading && run.status === "error" && <p className="result-error">{run.message}</p>}
+            {!isLoading && run.status === "success" && isRewrite && view === "diff" && (
+              <DiffView before={inputText} after={run.text} />
+            )}
+            {!isLoading && run.status === "success" && (!isRewrite || view === "result") && (
+              <p className="result-plain">{run.text}</p>
+            )}
+            {!isLoading && run.status === "idle" && <p className="result-placeholder">Result will appear here.</p>}
+          </div>
         </div>
-      )}
+      </div>
 
       <div className="action-bar">
         <span className="status">
@@ -183,8 +167,6 @@ export function MainPanel({
           <span>{isRewrite ? "Rewrite" : "Generate"}</span>
         </button>
       </div>
-
-      <ResultVariantSwitcher current={resultVariant} />
     </main>
   );
 }
