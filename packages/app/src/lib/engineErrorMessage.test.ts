@@ -12,6 +12,12 @@ describe("engineErrorMessage", () => {
     expect(engineErrorMessage({ code: "rate_limited" })).toBe("Rate limited — try again in a moment.");
   });
 
+  it("includes the underlying cause message for provider_error when present", () => {
+    expect(engineErrorMessage({ code: "provider_error", cause: new Error("Provider returned 404: model not found") })).toBe(
+      "The AI provider returned an error: Provider returned 404: model not found",
+    );
+  });
+
   it("has a distinct message per error code", () => {
     const codes = ["invalid_request", "provider_error", "aborted", "unknown"] as const;
     const messages = codes.map((code) => engineErrorMessage({ code }));
