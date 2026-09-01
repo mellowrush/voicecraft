@@ -1,8 +1,10 @@
 import { useState } from "react";
 import type { GenerationOptions, Mode, VoiceProfile } from "@voicecraft/core";
 import type { RunStatus } from "../lib/useVoicecraftApp";
+import type { HistoryEntry } from "../lib/historyStore";
 import { DiffView } from "./DiffView";
 import { GenerationOptionsFields } from "./GenerationOptionsFields";
+import { HistoryView } from "./HistoryView";
 
 type Props = {
   profile: VoiceProfile | null;
@@ -20,6 +22,10 @@ type Props = {
   onOpenSettings: () => void;
   optionsOverride: GenerationOptions | undefined;
   onOptionsOverrideChange: (options: GenerationOptions | undefined) => void;
+  history: HistoryEntry[];
+  onRerunHistoryEntry: (entry: HistoryEntry) => void;
+  onDeleteHistoryEntry: (id: string) => void;
+  onClearHistory: () => void;
 };
 
 export function MainPanel({
@@ -38,6 +44,10 @@ export function MainPanel({
   onOpenSettings,
   optionsOverride,
   onOptionsOverrideChange,
+  history,
+  onRerunHistoryEntry,
+  onDeleteHistoryEntry,
+  onClearHistory,
 }: Props) {
   const isRewrite = mode === "rewrite";
   const isLoading = run.status === "loading";
@@ -49,6 +59,7 @@ export function MainPanel({
   const skeletonCount = effectiveOptions.variantCount ?? 1;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isCustomized = optionsOverride !== undefined;
+  const [activeTab, setActiveTab] = useState<"compose" | "history">("compose");
 
   return (
     <main className="main">
@@ -59,20 +70,38 @@ export function MainPanel({
         </div>
 
         <div className="header-actions">
-          <div className="mode-toggle" role="group" aria-label="Mode">
+          {activeTab === "compose" && (
+            <div className="mode-toggle" role="group" aria-label="Mode">
+              <button
+                className={`mode-btn${isRewrite ? " active" : ""}`}
+                aria-pressed={isRewrite}
+                onClick={() => onModeChange("rewrite")}
+              >
+                Rewrite
+              </button>
+              <button
+                className={`mode-btn${!isRewrite ? " active" : ""}`}
+                aria-pressed={!isRewrite}
+                onClick={() => onModeChange("generate")}
+              >
+                Generate
+              </button>
+            </div>
+          )}
+          <div className="mode-toggle" role="group" aria-label="View">
             <button
-              className={`mode-btn${isRewrite ? " active" : ""}`}
-              aria-pressed={isRewrite}
-              onClick={() => onModeChange("rewrite")}
+              className={`mode-btn${activeTab === "compose" ? " active" : ""}`}
+              aria-pressed={activeTab === "compose"}
+              onClick={() => setActiveTab("compose")}
             >
-              Rewrite
+              Compose
             </button>
             <button
-              className={`mode-btn${!isRewrite ? " active" : ""}`}
-              aria-pressed={!isRewrite}
-              onClick={() => onModeChange("generate")}
+              className={`mode-btn${activeTab === "history" ? " active" : ""}`}
+              aria-pressed={activeTab === "history"}
+              onClick={() => setActiveTab("history")}
             >
-              Generate
+              History
             </button>
           </div>
           <button className="settings-btn" title="Settings" aria-label="Settings" onClick={onOpenSettings}>
@@ -81,6 +110,19 @@ export function MainPanel({
         </div>
       </div>
 
+      {activeTab === "history" ? (
+        <HistoryView
+          history={history}
+          onRerun={(entry) => {
+            onRerunHistoryEntry(entry);
+            setActiveTab("compose");
+          }}
+          onDelete={onDeleteHistoryEntry}
+          onClearAll={onClearHistory}
+          onCopy={onCopy}
+        />
+      ) : (
+        <>
       <div className="context-row">
         <label htmlFor="context-input" className="sr-only">
           Context (optional)
@@ -213,6 +255,8 @@ export function MainPanel({
           <span>{isRewrite ? "Rewrite" : "Generate"}</span>
         </button>
       </div>
+        </>
+      )}
     </main>
   );
 }

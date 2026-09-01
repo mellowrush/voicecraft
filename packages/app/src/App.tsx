@@ -88,6 +88,10 @@ function App() {
         onOpenSettings={() => setSettingsOpen(true)}
         optionsOverride={app.optionsOverride}
         onOptionsOverrideChange={app.setOptionsOverride}
+        history={app.history}
+        onRerunHistoryEntry={app.rerunHistoryEntry}
+        onDeleteHistoryEntry={app.deleteHistoryEntry}
+        onClearHistory={app.clearHistory}
       />
 
       <ProfileModal
