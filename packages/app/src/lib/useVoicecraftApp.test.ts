@@ -84,7 +84,7 @@ describe("useVoicecraftApp", () => {
 
   it("runs the engine and reports a success result", async () => {
     const { readFile, writeFile } = makeFileStore(seededStore());
-    const generate = vi.fn().mockResolvedValue({ text: "rewritten!" });
+    const generate = vi.fn().mockResolvedValue({ variants: ["rewritten!"] });
     const engine = makeEngine(generate);
 
     const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
@@ -93,11 +93,46 @@ describe("useVoicecraftApp", () => {
     act(() => result.current.setInputText("hello there"));
     await act(() => result.current.runAction());
 
-    expect(result.current.run).toEqual({ status: "success", text: "rewritten!" });
+    expect(result.current.run).toEqual({ status: "success", variants: ["rewritten!"], requestedCount: 1 });
     expect(generate).toHaveBeenCalledWith(
       expect.objectContaining({ text: "hello there", mode: "rewrite" }),
       { stream: false },
     );
+  });
+
+  it("passes the selected profile's defaultGenerationOptions through as options", async () => {
+    const { readFile, writeFile } = makeFileStore(seededStore());
+    const generate = vi.fn().mockResolvedValue({ variants: ["one", "two"] });
+    const engine = makeEngine(generate);
+
+    const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
+    await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+
+    act(() => result.current.setInputText("hello there"));
+    await act(() => result.current.runAction());
+
+    const selectedProfile = result.current.profiles.find((p) => p.id === result.current.selectedProfileId);
+    expect(generate).toHaveBeenCalledWith(
+      expect.objectContaining({ options: selectedProfile?.defaultGenerationOptions }),
+      { stream: false },
+    );
+  });
+
+  it("carries the profile's requested variantCount alongside a partial-success result", async () => {
+    const profileWithVariants = { ...predefinedProfiles[0], defaultGenerationOptions: { variantCount: 4 } };
+    const { readFile, writeFile } = makeFileStore(
+      serializeProfilesFile({ profiles: [profileWithVariants], lastUsedProfileId: null, activeVendor: "openai" }),
+    );
+    const generate = vi.fn().mockResolvedValue({ variants: ["only one"] });
+    const engine = makeEngine(generate);
+
+    const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
+    await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+
+    act(() => result.current.setInputText("hello there"));
+    await act(() => result.current.runAction());
+
+    expect(result.current.run).toEqual({ status: "success", variants: ["only one"], requestedCount: 4 });
   });
 
   it("maps an EngineError into a user-facing error message", async () => {

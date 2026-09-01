@@ -75,7 +75,7 @@ describe("App", () => {
     await user.click(screen.getByTestId("run-btn"));
     await waitFor(() => expect(screen.getByText("Hey — following up. Thanks!")).toBeInTheDocument());
 
-    await user.click(screen.getByTitle("Copy to clipboard"));
+    await user.click(screen.getByTitle("Copy variant 1"));
 
     expect(await screen.findByText("Copied to clipboard")).toBeInTheDocument();
   });

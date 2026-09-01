@@ -7,7 +7,7 @@ import { DEFAULT_VENDOR, type Vendor } from "./vendor";
 export type RunStatus =
   | { status: "idle" }
   | { status: "loading" }
-  | { status: "success"; text: string }
+  | { status: "success"; variants: string[]; requestedCount: number }
   | { status: "error"; message: string };
 
 export type ProfileDraft = { name: string; description: string };
@@ -94,10 +94,15 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
           text: inputText,
           mode,
           context: context.trim() || undefined,
+          options: selectedProfile.defaultGenerationOptions,
         },
         { stream: false },
-      )) as { text: string };
-      setRun({ status: "success", text: result.text });
+      )) as { variants: string[] };
+      setRun({
+        status: "success",
+        variants: result.variants,
+        requestedCount: selectedProfile.defaultGenerationOptions?.variantCount ?? 1,
+      });
     } catch (err) {
       setRun({ status: "error", message: engineErrorMessage(err as EngineError) });
     }

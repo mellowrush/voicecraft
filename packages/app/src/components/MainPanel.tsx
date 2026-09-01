@@ -35,7 +35,11 @@ export function MainPanel({
 }: Props) {
   const isRewrite = mode === "rewrite";
   const isLoading = run.status === "loading";
-  const resultText = run.status === "success" ? run.text : "";
+  const variants = run.status === "success" ? run.variants : [];
+  // Diff only compares one before/after pair, so it's only offered when the
+  // call actually produced exactly one variant.
+  const canShowDiff = isRewrite && variants.length === 1;
+  const skeletonCount = profile?.defaultGenerationOptions?.variantCount ?? 1;
 
   return (
     <main className="main">
@@ -118,35 +122,54 @@ export function MainPanel({
                   </button>
                 </div>
               )}
-              <button
-                className="copy-btn"
-                title="Copy to clipboard"
-                aria-label="Copy to clipboard"
-                disabled={run.status !== "success"}
-                onClick={() => onCopy(resultText)}
-              >
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-                  <rect x="7" y="7" width="10" height="10" rx="2" />
-                  <path d="M4 13V5a2 2 0 0 1 2-2h8" />
-                </svg>
-              </button>
             </div>
           </div>
 
           <div className="result-box" aria-live="polite">
             {isLoading && (
-              <div className="skeleton active" aria-hidden="true">
-                <div className="skeleton-line" style={{ width: "95%" }} />
-                <div className="skeleton-line" style={{ width: "88%" }} />
-                <div className="skeleton-line" style={{ width: "60%" }} />
+              <div className="variant-stack" aria-hidden="true">
+                {Array.from({ length: skeletonCount }, (_, i) => (
+                  <div className="variant-card" key={i}>
+                    <div className="skeleton active">
+                      <div className="skeleton-line" style={{ width: "95%" }} />
+                      <div className="skeleton-line" style={{ width: "88%" }} />
+                      <div className="skeleton-line" style={{ width: "60%" }} />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
             {!isLoading && run.status === "error" && <p className="result-error">{run.message}</p>}
-            {!isLoading && run.status === "success" && isRewrite && view === "diff" && (
-              <DiffView before={inputText} after={run.text} />
+            {!isLoading && run.status === "success" && canShowDiff && view === "diff" && (
+              <DiffView before={inputText} after={variants[0]} />
             )}
-            {!isLoading && run.status === "success" && (!isRewrite || view === "result") && (
-              <p className="result-plain">{run.text}</p>
+            {!isLoading && run.status === "success" && (!canShowDiff || view === "result") && (
+              <div className="variant-stack">
+                {variants.map((text, i) => (
+                  <div className="variant-card" key={i}>
+                    <div className="variant-card-head">
+                      <span>Variant {i + 1}</span>
+                      <button
+                        className="copy-btn"
+                        title={`Copy variant ${i + 1}`}
+                        aria-label={`Copy variant ${i + 1}`}
+                        onClick={() => onCopy(text)}
+                      >
+                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                          <rect x="7" y="7" width="10" height="10" rx="2" />
+                          <path d="M4 13V5a2 2 0 0 1 2-2h8" />
+                        </svg>
+                      </button>
+                    </div>
+                    <p className="result-plain">{text}</p>
+                  </div>
+                ))}
+                {variants.length < run.requestedCount && (
+                  <p className="variant-partial-notice">
+                    Generated {variants.length} of {run.requestedCount} requested variants.
+                  </p>
+                )}
+              </div>
             )}
             {!isLoading && run.status === "idle" && <p className="result-placeholder">Result will appear here.</p>}
           </div>
