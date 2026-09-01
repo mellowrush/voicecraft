@@ -229,4 +229,86 @@ describe("useVoicecraftApp", () => {
     });
     expect(result.current.profiles).toHaveLength(predefinedProfiles.length);
   });
+
+  it("saves a profile's defaultGenerationOptions alongside name/description", async () => {
+    const { readFile, writeFile } = makeFileStore(seededStore());
+    const engine = makeEngine(vi.fn());
+
+    const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
+    await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+
+    await act(() =>
+      result.current.saveProfile({
+        name: "Multilingual Voice",
+        description: "Speaks several languages.",
+        defaultGenerationOptions: { variantCount: 3, language: "ro" },
+      }),
+    );
+
+    expect(result.current.profiles).toContainEqual({
+      id: "multilingual-voice",
+      name: "Multilingual Voice",
+      description: "Speaks several languages.",
+      defaultGenerationOptions: { variantCount: 3, language: "ro" },
+    });
+  });
+
+  describe("session-level generation-options overrides", () => {
+    it("has no override by default, so runAction sends the profile's own defaults", async () => {
+      const profileWithDefaults = { ...predefinedProfiles[0], defaultGenerationOptions: { variantCount: 2 } };
+      const { readFile, writeFile } = makeFileStore(
+        serializeProfilesFile({ profiles: [profileWithDefaults], lastUsedProfileId: null, activeVendor: "openai" }),
+      );
+      const generate = vi.fn().mockResolvedValue({ variants: ["one", "two"] });
+      const engine = makeEngine(generate);
+
+      const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
+      await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+      expect(result.current.optionsOverride).toBeUndefined();
+
+      act(() => result.current.setInputText("hello there"));
+      await act(() => result.current.runAction());
+
+      expect(generate).toHaveBeenCalledWith(
+        expect.objectContaining({ options: { variantCount: 2 } }),
+        { stream: false },
+      );
+    });
+
+    it("sends the override instead of the profile's defaults once one is set", async () => {
+      const profileWithDefaults = { ...predefinedProfiles[0], defaultGenerationOptions: { variantCount: 2 } };
+      const { readFile, writeFile } = makeFileStore(
+        serializeProfilesFile({ profiles: [profileWithDefaults], lastUsedProfileId: null, activeVendor: "openai" }),
+      );
+      const generate = vi.fn().mockResolvedValue({ variants: ["one", "two", "three"] });
+      const engine = makeEngine(generate);
+
+      const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
+      await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+
+      act(() => result.current.setOptionsOverride({ variantCount: 5 }));
+      act(() => result.current.setInputText("hello there"));
+      await act(() => result.current.runAction());
+
+      expect(generate).toHaveBeenCalledWith(
+        expect.objectContaining({ options: { variantCount: 5 } }),
+        { stream: false },
+      );
+    });
+
+    it("clears the override when the selected profile changes", async () => {
+      const { readFile, writeFile } = makeFileStore(seededStore());
+      const engine = makeEngine(vi.fn());
+
+      const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile }));
+      await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+
+      act(() => result.current.setOptionsOverride({ variantCount: 5 }));
+      expect(result.current.optionsOverride).toEqual({ variantCount: 5 });
+
+      act(() => result.current.setSelectedProfileId(predefinedProfiles[1].id));
+
+      expect(result.current.optionsOverride).toBeUndefined();
+    });
+  });
 });

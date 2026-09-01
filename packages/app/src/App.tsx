@@ -77,6 +77,8 @@ function App() {
         onViewChange={app.setView}
         onCopy={handleCopy}
         onOpenSettings={() => setSettingsOpen(true)}
+        optionsOverride={app.optionsOverride}
+        onOptionsOverrideChange={app.setOptionsOverride}
       />
 
       <ProfileModal

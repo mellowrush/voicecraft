@@ -1,6 +1,8 @@
-import type { Mode, VoiceProfile } from "@voicecraft/core";
+import { useState } from "react";
+import type { GenerationOptions, Mode, VoiceProfile } from "@voicecraft/core";
 import type { RunStatus } from "../lib/useVoicecraftApp";
 import { DiffView } from "./DiffView";
+import { GenerationOptionsFields } from "./GenerationOptionsFields";
 
 type Props = {
   profile: VoiceProfile | null;
@@ -16,6 +18,8 @@ type Props = {
   onViewChange: (view: "result" | "diff") => void;
   onCopy: (text: string) => void;
   onOpenSettings: () => void;
+  optionsOverride: GenerationOptions | undefined;
+  onOptionsOverrideChange: (options: GenerationOptions | undefined) => void;
 };
 
 export function MainPanel({
@@ -32,6 +36,8 @@ export function MainPanel({
   onViewChange,
   onCopy,
   onOpenSettings,
+  optionsOverride,
+  onOptionsOverrideChange,
 }: Props) {
   const isRewrite = mode === "rewrite";
   const isLoading = run.status === "loading";
@@ -39,7 +45,10 @@ export function MainPanel({
   // Diff only compares one before/after pair, so it's only offered when the
   // call actually produced exactly one variant.
   const canShowDiff = isRewrite && variants.length === 1;
-  const skeletonCount = profile?.defaultGenerationOptions?.variantCount ?? 1;
+  const effectiveOptions = optionsOverride ?? profile?.defaultGenerationOptions ?? {};
+  const skeletonCount = effectiveOptions.variantCount ?? 1;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const isCustomized = optionsOverride !== undefined;
 
   return (
     <main className="main">
@@ -174,6 +183,20 @@ export function MainPanel({
             {!isLoading && run.status === "idle" && <p className="result-placeholder">Result will appear here.</p>}
           </div>
         </div>
+      </div>
+
+      <div className="override-drawer-wrap">
+        <button type="button" className="override-drawer-toggle" onClick={() => setDrawerOpen((v) => !v)}>
+          {drawerOpen ? "▾" : "▸"} Adjust for this generation{isCustomized ? " · customized" : ""}
+        </button>
+        {drawerOpen && (
+          <div className="override-drawer">
+            <GenerationOptionsFields value={effectiveOptions} onChange={onOptionsOverrideChange} />
+            <button type="button" className="btn-ghost" onClick={() => onOptionsOverrideChange(undefined)}>
+              Reset to profile defaults
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="action-bar">

@@ -918,3 +918,51 @@ body:has(.onboarding) {
 .onboard-actions .btn-ghost {
   width: 100%;
 }
+
+.options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
+}
+.options-grid input,
+.options-grid select {
+  width: 100%;
+  border: 1px solid var(--color-pale-slate);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  font-family: var(--font-ui);
+}
+.options-grid input:focus,
+.options-grid select:focus {
+  outline: none;
+  border-color: var(--color-iris-blue);
+}
+
+.profile-modal-tabs {
+  margin-bottom: 12px;
+}
+
+.override-drawer-wrap {
+  padding: 0 24px 10px;
+}
+.override-drawer-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-graphite);
+  cursor: pointer;
+}
+.override-drawer-toggle:hover {
+  color: var(--color-ink);
+}
+.override-drawer {
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--color-pale-slate);
+  border-radius: var(--radius-md);
+  background: var(--color-lavender-mist);
+}

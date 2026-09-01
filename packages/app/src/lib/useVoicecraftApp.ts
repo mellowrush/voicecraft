@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Engine, EngineError, Mode, VoiceProfile } from "@voicecraft/core";
+import type { Engine, EngineError, GenerationOptions, Mode, VoiceProfile } from "@voicecraft/core";
 import { loadProfiles, serializeProfilesFile, type ReadFile, type WriteFile } from "./profileStore";
 import { engineErrorMessage } from "./engineErrorMessage";
 import { DEFAULT_VENDOR, type Vendor } from "./vendor";
@@ -10,7 +10,7 @@ export type RunStatus =
   | { status: "success"; variants: string[]; requestedCount: number }
   | { status: "error"; message: string };
 
-export type ProfileDraft = { name: string; description: string };
+export type ProfileDraft = { name: string; description: string; defaultGenerationOptions?: GenerationOptions };
 
 export type UseVoicecraftAppOptions = {
   engine: Engine;
@@ -37,7 +37,7 @@ function uniqueId(base: string, existingIds: Set<string>): string {
 
 export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftAppOptions) {
   const [profiles, setProfiles] = useState<VoiceProfile[]>([]);
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [selectedProfileId, setSelectedProfileIdState] = useState<string | null>(null);
   const [activeVendor, setActiveVendor] = useState<Vendor>(DEFAULT_VENDOR);
   const [mode, setModeState] = useState<Mode>("rewrite");
   const [context, setContext] = useState("");
@@ -46,13 +46,23 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
   const [view, setView] = useState<"result" | "diff">("result");
   const [editingProfileId, setEditingProfileId] = useState<string | "new" | null>(null);
   const [loaded, setLoaded] = useState(false);
+  // A per-generation override of the selected profile's defaultGenerationOptions
+  // (map #58's decision: overrides are just the same options object passed at
+  // call time). Cleared whenever the selected profile changes, since an
+  // override for one profile's settings has no meaning against another's.
+  const [optionsOverride, setOptionsOverride] = useState<GenerationOptions | undefined>(undefined);
+
+  const setSelectedProfileId = useCallback((id: string) => {
+    setSelectedProfileIdState(id);
+    setOptionsOverride(undefined);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
     loadProfiles(readFile, writeFile).then((store) => {
       if (cancelled) return;
       setProfiles(store.profiles);
-      setSelectedProfileId(store.lastUsedProfileId ?? store.profiles[0]?.id ?? null);
+      setSelectedProfileIdState(store.lastUsedProfileId ?? store.profiles[0]?.id ?? null);
       setActiveVendor(store.activeVendor);
       setLoaded(true);
     });
@@ -87,6 +97,7 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
   const runAction = useCallback(async () => {
     if (!selectedProfile || !inputText.trim()) return;
     setRun({ status: "loading" });
+    const options = optionsOverride ?? selectedProfile.defaultGenerationOptions;
     try {
       const result = (await engine.generate(
         {
@@ -94,31 +105,36 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
           text: inputText,
           mode,
           context: context.trim() || undefined,
-          options: selectedProfile.defaultGenerationOptions,
+          options,
         },
         { stream: false },
       )) as { variants: string[] };
       setRun({
         status: "success",
         variants: result.variants,
-        requestedCount: selectedProfile.defaultGenerationOptions?.variantCount ?? 1,
+        requestedCount: options?.variantCount ?? 1,
       });
     } catch (err) {
       setRun({ status: "error", message: engineErrorMessage(err as EngineError) });
     }
-  }, [engine, selectedProfile, inputText, mode, context]);
+  }, [engine, selectedProfile, inputText, mode, context, optionsOverride]);
 
   const saveProfile = useCallback(
     async (draft: ProfileDraft, existingId?: string) => {
       const id = existingId ?? uniqueId(slugify(draft.name), new Set(profiles.map((p) => p.id)));
-      const next: VoiceProfile = { id, name: draft.name, description: draft.description };
+      const next: VoiceProfile = {
+        id,
+        name: draft.name,
+        description: draft.description,
+        defaultGenerationOptions: draft.defaultGenerationOptions,
+      };
       const updated = existingId ? profiles.map((p) => (p.id === existingId ? next : p)) : [...profiles, next];
 
       setProfiles(updated);
       setEditingProfileId(null);
       setSelectedProfileId(id);
     },
-    [profiles],
+    [profiles, setSelectedProfileId],
   );
 
   return {
@@ -141,5 +157,7 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
     editingProfileId,
     setEditingProfileId,
     saveProfile,
+    optionsOverride,
+    setOptionsOverride,
   };
 }
