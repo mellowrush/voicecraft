@@ -3,6 +3,8 @@ import type { VoiceProfile } from "@voicecraft/core";
 import { isPredefined } from "../lib/predefinedProfiles";
 import { LogoMarkByVariant, LogoVariantSwitcher, useLogoVariant } from "./logoMarkVariants.prototype";
 import "./logoMarkVariants.prototype.css";
+import { HistorySidebarSectionA, useHistoryUIVariant } from "./historyBrowsing.prototype";
+import "./historyBrowsing.prototype.css";
 
 type Props = {
   profiles: VoiceProfile[];
@@ -16,6 +18,8 @@ type Props = {
 
 export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit, isProcessing = false }: Props) {
   const logoVariant = useLogoVariant();
+  // PROTOTYPE (#66) — mocked history section, variant A only.
+  const historyVariant = useHistoryUIVariant();
   // PROTOTYPE (#44) — lets you preview variant D's live-status ring without a real
   // rewrite in flight; has no effect on any other variant.
   const [simulateProcessing, setSimulateProcessing] = useState(false);
@@ -85,6 +89,8 @@ export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit, 
         {custom.length === 0 && <p className="empty-hint">No custom profiles yet</p>}
         {custom.map((p) => renderItem(p, true))}
       </div>
+
+      {historyVariant === "A" && <HistorySidebarSectionA />}
     </aside>
   );
 }
