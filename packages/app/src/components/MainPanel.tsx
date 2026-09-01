@@ -1,9 +1,6 @@
-import { useState } from "react";
 import type { Mode, VoiceProfile } from "@voicecraft/core";
 import type { RunStatus } from "../lib/useVoicecraftApp";
 import { DiffView } from "./DiffView";
-import { HistoryButtonB, HistoryFullViewC, HistoryVariantSwitcher, MainHeaderTabsC, useHistoryUIVariant } from "./historyBrowsing.prototype";
-import "./historyBrowsing.prototype.css";
 
 type Props = {
   profile: VoiceProfile | null;
@@ -40,10 +37,6 @@ export function MainPanel({
   const isLoading = run.status === "loading";
   const resultText = run.status === "success" ? run.text : "";
 
-  // PROTOTYPE (#66) — mocked history browsing UI, variants B/C.
-  const historyVariant = useHistoryUIVariant();
-  const [historyTab, setHistoryTab] = useState<"compose" | "history">("compose");
-
   return (
     <main className="main">
       <div className="main-header">
@@ -53,37 +46,28 @@ export function MainPanel({
         </div>
 
         <div className="header-actions">
-          {historyVariant === "C" ? (
-            <MainHeaderTabsC tab={historyTab} onTabChange={setHistoryTab} />
-          ) : (
-            <div className="mode-toggle" role="group" aria-label="Mode">
-              <button
-                className={`mode-btn${isRewrite ? " active" : ""}`}
-                aria-pressed={isRewrite}
-                onClick={() => onModeChange("rewrite")}
-              >
-                Rewrite
-              </button>
-              <button
-                className={`mode-btn${!isRewrite ? " active" : ""}`}
-                aria-pressed={!isRewrite}
-                onClick={() => onModeChange("generate")}
-              >
-                Generate
-              </button>
-            </div>
-          )}
-          {historyVariant === "B" && <HistoryButtonB />}
+          <div className="mode-toggle" role="group" aria-label="Mode">
+            <button
+              className={`mode-btn${isRewrite ? " active" : ""}`}
+              aria-pressed={isRewrite}
+              onClick={() => onModeChange("rewrite")}
+            >
+              Rewrite
+            </button>
+            <button
+              className={`mode-btn${!isRewrite ? " active" : ""}`}
+              aria-pressed={!isRewrite}
+              onClick={() => onModeChange("generate")}
+            >
+              Generate
+            </button>
+          </div>
           <button className="settings-btn" title="Settings" aria-label="Settings" onClick={onOpenSettings}>
             ⚙
           </button>
         </div>
       </div>
 
-      {historyVariant === "C" && historyTab === "history" ? (
-        <HistoryFullViewC onRerun={() => setHistoryTab("compose")} />
-      ) : (
-        <>
       <div className="context-row">
         <label htmlFor="context-input" className="sr-only">
           Context (optional)
@@ -183,10 +167,6 @@ export function MainPanel({
           <span>{isRewrite ? "Rewrite" : "Generate"}</span>
         </button>
       </div>
-        </>
-      )}
-
-      <HistoryVariantSwitcher current={historyVariant} />
     </main>
   );
 }
