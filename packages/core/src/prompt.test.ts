@@ -8,6 +8,7 @@ describe("buildPrompt", () => {
       profile: noirDetective,
       mode: "rewrite",
       text: "The meeting got rescheduled to tomorrow.",
+      options: { language: "en" },
     });
 
     const nameIdx = prompt.indexOf('You are writing in the voice of "Noir Detective".');
@@ -116,5 +117,61 @@ describe("buildPrompt", () => {
 
     expect(withoutContext).not.toContain("Context:");
     expect(withContext).toContain("Context: twitter reply, keep under 280 chars");
+  });
+
+  it("includes a target length instruction only when options.targetLength is supplied", () => {
+    const without = buildPrompt({ profile: bareMinimum, mode: "generate", text: "hi" });
+    const withLength = buildPrompt({
+      profile: bareMinimum,
+      mode: "generate",
+      text: "hi",
+      options: { targetLength: 120 },
+    });
+
+    expect(without).not.toContain("Target length");
+    expect(withLength).toContain("Target length: approximately 120 words.");
+  });
+
+  it("includes a diacritics instruction only when options.diacritics is 'strip'", () => {
+    const withDefault = buildPrompt({
+      profile: bareMinimum,
+      mode: "generate",
+      text: "hi",
+      options: { diacritics: "default" },
+    });
+    const withStrip = buildPrompt({
+      profile: bareMinimum,
+      mode: "generate",
+      text: "hi",
+      options: { diacritics: "strip" },
+    });
+
+    expect(withDefault).not.toContain("diacritical marks");
+    expect(withStrip).toContain("Do not use diacritical marks");
+  });
+
+  it("includes a multi-variant JSON instruction only when options.variantCount is greater than 1", () => {
+    const singleVariant = buildPrompt({ profile: bareMinimum, mode: "generate", text: "hi" });
+    const multiVariant = buildPrompt({
+      profile: bareMinimum,
+      mode: "generate",
+      text: "hi",
+      options: { variantCount: 3 },
+    });
+
+    expect(singleVariant).not.toContain("variants");
+    expect(multiVariant).toContain('{"variants":');
+    expect(multiVariant).toContain("exactly 3");
+  });
+
+  it("uses options.language instead of any profile-level language", () => {
+    const prompt = buildPrompt({
+      profile: bareMinimum,
+      mode: "generate",
+      text: "hi",
+      options: { language: "ro" },
+    });
+
+    expect(prompt).toContain("Respond in ro.");
   });
 });

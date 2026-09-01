@@ -1,8 +1,11 @@
 import { z } from "zod";
 import { buildPrompt } from "./prompt.js";
 import { voiceProfileSchema, type VoiceProfile } from "./voice-profile.js";
+import { generationOptionsSchema, type GenerationOptions } from "./generation-options.js";
 import type { Mode } from "./mode.js";
 import { RateLimitError, type EngineError } from "./errors.js";
+import { parseVariants } from "./parse-variants.js";
+import { canSafelyStripDiacritics, stripDiacritics } from "./diacritics.js";
 
 export type Provider = (
   prompt: string,
@@ -16,9 +19,10 @@ export interface Engine {
       text: string;
       mode: Mode;
       context?: string;
+      options?: GenerationOptions;
     },
     opts?: { stream?: boolean; signal?: AbortSignal },
-  ): Promise<{ text: string }> | AsyncIterable<{ delta: string }>;
+  ): Promise<{ variants: string[] }> | AsyncIterable<{ delta: string }>;
 }
 
 type SignalOpts = { signal?: AbortSignal };
@@ -29,6 +33,7 @@ const requestSchema = z
     text: z.string().min(1),
     mode: z.enum(["rewrite", "generate"] satisfies [Mode, Mode]),
     context: z.string().optional(),
+    options: generationOptionsSchema.optional(),
   })
   .strict();
 
@@ -131,6 +136,13 @@ async function* streamGenerate(
   }
 }
 
+function applyDiacritics(variants: string[], options?: GenerationOptions): string[] {
+  if (options?.diacritics !== "strip" || !canSafelyStripDiacritics(options.language)) {
+    return variants;
+  }
+  return variants.map(stripDiacritics);
+}
+
 export function createEngine(config: { provider: Provider }): Engine {
   return {
     generate(request, opts) {
@@ -141,11 +153,19 @@ export function createEngine(config: { provider: Provider }): Engine {
       checkAborted(opts?.signal);
 
       const prompt = buildPrompt(parsed.data);
+      const variantCount = parsed.data.options?.variantCount ?? 1;
 
-      if (opts?.stream) {
+      // No vendor supports incrementally parsing a multi-variant JSON payload
+      // mid-stream (ADR-0007), so a variantCount > 1 always forces a batch
+      // call, silently overriding opts.stream — the caller shouldn't need to
+      // know this constraint exists just to pass a profile's defaults through.
+      if (opts?.stream && variantCount <= 1) {
         return streamGenerate(config.provider, prompt, opts);
       }
-      return batchGenerate(config.provider, prompt, opts ?? {});
+
+      return batchGenerate(config.provider, prompt, opts ?? {}).then(({ text }) => ({
+        variants: applyDiacritics(parseVariants(text, variantCount), parsed.data.options),
+      }));
     },
   };
 }
