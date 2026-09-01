@@ -1,5 +1,5 @@
 import type { GenerationOptions, Mode } from "@voicecraft/core";
-import type { Vendor } from "./vendor";
+import { isVendor, type Vendor } from "./vendor";
 
 // One row of Voicecraft's generation history, per ADR-0008 — persisted as
 // one JSON line per entry in history.jsonl (append-only, not a whole-file
@@ -25,7 +25,7 @@ function isHistoryEntry(value: unknown): value is HistoryEntry {
     typeof v.createdAt === "string" &&
     typeof v.profileId === "string" &&
     typeof v.profileName === "string" &&
-    (v.vendor === "openai" || v.vendor === "anthropic") &&
+    isVendor(v.vendor) &&
     (v.mode === "rewrite" || v.mode === "generate") &&
     typeof v.inputText === "string" &&
     Array.isArray(v.variants)

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import type { HistoryEntry } from "../lib/historyStore";
+import { CopyButton } from "./CopyButton";
 
 type Props = {
   history: HistoryEntry[];
@@ -86,20 +87,7 @@ export function HistoryView({ history, onRerun, onDelete, onClearAll, onCopy }: 
                   <div className="variant-card" key={i}>
                     <div className="variant-card-head">
                       <span>Variant {i + 1}</span>
-                      <button
-                        className="copy-btn"
-                        title={`Copy variant ${i + 1}`}
-                        aria-label={`Copy variant ${i + 1}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onCopy(text);
-                        }}
-                      >
-                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-                          <rect x="7" y="7" width="10" height="10" rx="2" />
-                          <path d="M4 13V5a2 2 0 0 1 2-2h8" />
-                        </svg>
-                      </button>
+                      <CopyButton text={text} label={`Copy variant ${i + 1}`} onCopy={onCopy} />
                     </div>
                     <p className="result-plain">{text}</p>
                   </div>

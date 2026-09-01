@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { GenerationOptions, Mode, VoiceProfile } from "@voicecraft/core";
 import type { RunStatus } from "../lib/useVoicecraftApp";
 import type { HistoryEntry } from "../lib/historyStore";
+import { CopyButton } from "./CopyButton";
 import { DiffView } from "./DiffView";
 import { GenerationOptionsFields } from "./GenerationOptionsFields";
 import { HistoryView } from "./HistoryView";
@@ -55,6 +56,11 @@ export function MainPanel({
   // Diff only compares one before/after pair, so it's only offered when the
   // call actually produced exactly one variant.
   const canShowDiff = isRewrite && variants.length === 1;
+  // If a stale "diff" selection no longer applies (e.g. a multi-variant
+  // result came back after Diff was selected for a single-variant one),
+  // fall back to Result rather than rendering a Diff button that looks
+  // active while Result content is actually shown.
+  const effectiveView = canShowDiff ? view : "result";
   const effectiveOptions = optionsOverride ?? profile?.defaultGenerationOptions ?? {};
   const skeletonCount = effectiveOptions.variantCount ?? 1;
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -158,15 +164,17 @@ export function MainPanel({
               {isRewrite && (
                 <div className="view-toggle" role="group" aria-label="View">
                   <button
-                    className={`view-btn${view === "result" ? " active" : ""}`}
-                    aria-pressed={view === "result"}
+                    className={`view-btn${effectiveView === "result" ? " active" : ""}`}
+                    aria-pressed={effectiveView === "result"}
                     onClick={() => onViewChange("result")}
                   >
                     Result
                   </button>
                   <button
-                    className={`view-btn${view === "diff" ? " active" : ""}`}
-                    aria-pressed={view === "diff"}
+                    className={`view-btn${effectiveView === "diff" ? " active" : ""}`}
+                    aria-pressed={effectiveView === "diff"}
+                    disabled={!canShowDiff}
+                    title={canShowDiff ? undefined : "Diff is only available for a single-variant result"}
                     onClick={() => onViewChange("diff")}
                   >
                     Diff
@@ -191,26 +199,16 @@ export function MainPanel({
               </div>
             )}
             {!isLoading && run.status === "error" && <p className="result-error">{run.message}</p>}
-            {!isLoading && run.status === "success" && canShowDiff && view === "diff" && (
+            {!isLoading && run.status === "success" && effectiveView === "diff" && (
               <DiffView before={inputText} after={variants[0]} />
             )}
-            {!isLoading && run.status === "success" && (!canShowDiff || view === "result") && (
+            {!isLoading && run.status === "success" && effectiveView === "result" && (
               <div className="variant-stack">
                 {variants.map((text, i) => (
                   <div className="variant-card" key={i}>
                     <div className="variant-card-head">
                       <span>Variant {i + 1}</span>
-                      <button
-                        className="copy-btn"
-                        title={`Copy variant ${i + 1}`}
-                        aria-label={`Copy variant ${i + 1}`}
-                        onClick={() => onCopy(text)}
-                      >
-                        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-                          <rect x="7" y="7" width="10" height="10" rx="2" />
-                          <path d="M4 13V5a2 2 0 0 1 2-2h8" />
-                        </svg>
-                      </button>
+                      <CopyButton text={text} label={`Copy variant ${i + 1}`} onCopy={onCopy} />
                     </div>
                     <p className="result-plain">{text}</p>
                   </div>

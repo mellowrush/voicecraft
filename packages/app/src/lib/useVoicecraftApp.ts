@@ -40,6 +40,15 @@ function uniqueId(base: string, existingIds: Set<string>): string {
   return `${base}-${n}`;
 }
 
+function optionsEqual(a: GenerationOptions | undefined, b: GenerationOptions | undefined): boolean {
+  return (
+    (a?.targetLength ?? null) === (b?.targetLength ?? null) &&
+    (a?.variantCount ?? null) === (b?.variantCount ?? null) &&
+    (a?.language ?? null) === (b?.language ?? null) &&
+    (a?.diacritics ?? null) === (b?.diacritics ?? null)
+  );
+}
+
 export function useVoicecraftApp({
   engine,
   readFile,
@@ -176,15 +185,21 @@ export function useVoicecraftApp({
 
   // "Rerun" (#66) — loads a past generation's profile, input, context, mode,
   // and resolved options back into compose, ready to re-run or tweak further.
+  // Only actually sets an override when the entry's options diverge from the
+  // target profile's own defaults — otherwise the drawer would misreport
+  // "customized" for a run that simply used the profile as-is.
   const rerunHistoryEntry = useCallback(
     (entry: HistoryEntry) => {
       setSelectedProfileId(entry.profileId);
       setInputText(entry.inputText);
       setContext(entry.context ?? "");
       setModeState(entry.mode);
-      setOptionsOverride(entry.options);
+      const targetProfile = profiles.find((p) => p.id === entry.profileId);
+      setOptionsOverride(
+        optionsEqual(entry.options, targetProfile?.defaultGenerationOptions) ? undefined : entry.options,
+      );
     },
-    [setSelectedProfileId],
+    [setSelectedProfileId, profiles],
   );
 
   const saveProfile = useCallback(

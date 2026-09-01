@@ -1,4 +1,4 @@
-import type { GenerationOptions } from "@voicecraft/core";
+import { canSafelyStripDiacritics, type GenerationOptions } from "@voicecraft/core";
 
 type Props = {
   value: GenerationOptions;
@@ -10,6 +10,7 @@ type Props = {
 // override are the same GenerationOptions shape (map #58's decision), so
 // they share the same editing UI.
 export function GenerationOptionsFields({ value, onChange }: Props) {
+  const canStrip = canSafelyStripDiacritics(value.language);
   return (
     <div className="options-grid">
       <div>
@@ -50,7 +51,16 @@ export function GenerationOptionsFields({ value, onChange }: Props) {
           id="options-language"
           placeholder="Same as input"
           value={value.language ?? ""}
-          onChange={(e) => onChange({ ...value, language: e.target.value || undefined })}
+          onChange={(e) => {
+            const language = e.target.value || undefined;
+            // If diacritics was set to "strip" for a language that no longer
+            // supports it, clear it rather than leaving a disabled selection
+            // silently in effect.
+            const diacritics = value.diacritics === "strip" && !canSafelyStripDiacritics(language)
+              ? undefined
+              : value.diacritics;
+            onChange({ ...value, language, diacritics });
+          }}
         />
       </div>
       <div>
@@ -63,7 +73,9 @@ export function GenerationOptionsFields({ value, onChange }: Props) {
           onChange={(e) => onChange({ ...value, diacritics: e.target.value as GenerationOptions["diacritics"] })}
         >
           <option value="default">Default</option>
-          <option value="strip">Strip</option>
+          <option value="strip" disabled={!canStrip}>
+            Strip{canStrip ? "" : " (unavailable for this language)"}
+          </option>
         </select>
       </div>
     </div>

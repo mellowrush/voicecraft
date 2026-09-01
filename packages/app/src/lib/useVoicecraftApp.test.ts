@@ -470,5 +470,37 @@ describe("useVoicecraftApp", () => {
       expect(result.current.mode).toBe("generate");
       expect(result.current.optionsOverride).toEqual({ variantCount: 3 });
     });
+
+    it("does not set an override when the history entry's options match the target profile's own defaults", async () => {
+      const profileWithDefaults = { ...predefinedProfiles[1], defaultGenerationOptions: { variantCount: 3 } };
+      const { readFile, writeFile } = makeFileStore(
+        serializeProfilesFile({
+          profiles: [predefinedProfiles[0], profileWithDefaults],
+          lastUsedProfileId: null,
+          activeVendor: "openai",
+        }),
+      );
+      const entry: HistoryEntry = {
+        id: "1",
+        createdAt: "2026-08-31T09:12:00.000Z",
+        profileId: profileWithDefaults.id,
+        profileName: profileWithDefaults.name,
+        vendor: "openai",
+        mode: "generate",
+        inputText: "an instruction",
+        options: { variantCount: 3 },
+        variants: ["a", "b", "c"],
+      };
+      const historyStore = makeHistoryStore(`${JSON.stringify(entry)}\n`);
+      const engine = makeEngine(vi.fn());
+
+      const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile, ...historyStore }));
+      await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+
+      act(() => result.current.rerunHistoryEntry(entry));
+
+      expect(result.current.selectedProfileId).toBe(profileWithDefaults.id);
+      expect(result.current.optionsOverride).toBeUndefined();
+    });
   });
 });
