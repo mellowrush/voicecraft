@@ -4,6 +4,7 @@ import type { Engine } from "@voicecraft/core";
 import { useVoicecraftApp } from "./useVoicecraftApp";
 import { serializeProfilesFile } from "./profileStore";
 import { predefinedProfiles } from "./predefinedProfiles";
+import type { HistoryEntry } from "./historyStore";
 
 function makeFileStore(initial = "") {
   let contents = initial;
@@ -309,6 +310,165 @@ describe("useVoicecraftApp", () => {
       act(() => result.current.setSelectedProfileId(predefinedProfiles[1].id));
 
       expect(result.current.optionsOverride).toBeUndefined();
+    });
+  });
+
+  describe("history", () => {
+    function makeHistoryStore(initial = "") {
+      let contents = initial;
+      return {
+        readHistoryFile: vi.fn(async () => contents),
+        appendHistoryEntry: vi.fn(async (entryJson: string) => {
+          contents += `${entryJson}\n`;
+        }),
+        deleteHistoryEntry: vi.fn(async (id: string) => {
+          contents = contents
+            .split("\n")
+            .filter((line) => line.trim() && JSON.parse(line).id !== id)
+            .map((line) => `${line}\n`)
+            .join("");
+        }),
+        clearHistory: vi.fn(async () => {
+          contents = "";
+        }),
+      };
+    }
+
+    it("loads history from the history file on mount", async () => {
+      const { readFile, writeFile } = makeFileStore(seededStore());
+      const entry = {
+        id: "1",
+        createdAt: "2026-08-31T09:12:00.000Z",
+        profileId: predefinedProfiles[0].id,
+        profileName: predefinedProfiles[0].name,
+        vendor: "openai",
+        mode: "rewrite",
+        inputText: "hi",
+        variants: ["hello"],
+      };
+      const historyStore = makeHistoryStore(`${JSON.stringify(entry)}\n`);
+      const engine = makeEngine(vi.fn());
+
+      const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile, ...historyStore }));
+
+      await waitFor(() => expect(result.current.history).toHaveLength(1));
+      expect(result.current.history[0]).toEqual(entry);
+    });
+
+    it("appends a new entry to history after a successful generation", async () => {
+      const { readFile, writeFile } = makeFileStore(seededStore());
+      const historyStore = makeHistoryStore();
+      const generate = vi.fn().mockResolvedValue({ variants: ["rewritten!"] });
+      const engine = makeEngine(generate);
+
+      const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile, ...historyStore }));
+      await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+
+      act(() => result.current.setInputText("hello there"));
+      await act(() => result.current.runAction());
+
+      await waitFor(() => expect(result.current.history).toHaveLength(1));
+      expect(result.current.history[0]).toMatchObject({
+        profileId: result.current.selectedProfileId,
+        inputText: "hello there",
+        variants: ["rewritten!"],
+        mode: "rewrite",
+        vendor: "openai",
+      });
+      expect(historyStore.appendHistoryEntry).toHaveBeenCalledTimes(1);
+    });
+
+    it("does not append a history entry when generation fails", async () => {
+      const { readFile, writeFile } = makeFileStore(seededStore());
+      const historyStore = makeHistoryStore();
+      const generate = vi.fn().mockRejectedValue({ code: "unknown" });
+      const engine = makeEngine(generate);
+
+      const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile, ...historyStore }));
+      await waitFor(() => expect(result.current.profiles.length).toBeGreaterThan(0));
+
+      act(() => result.current.setInputText("hello there"));
+      await act(() => result.current.runAction());
+
+      expect(result.current.history).toHaveLength(0);
+      expect(historyStore.appendHistoryEntry).not.toHaveBeenCalled();
+    });
+
+    it("deletes a history entry, updating local state and the backing file", async () => {
+      const { readFile, writeFile } = makeFileStore(seededStore());
+      const entry = {
+        id: "1",
+        createdAt: "2026-08-31T09:12:00.000Z",
+        profileId: predefinedProfiles[0].id,
+        profileName: predefinedProfiles[0].name,
+        vendor: "openai",
+        mode: "rewrite",
+        inputText: "hi",
+        variants: ["hello"],
+      };
+      const historyStore = makeHistoryStore(`${JSON.stringify(entry)}\n`);
+      const engine = makeEngine(vi.fn());
+
+      const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile, ...historyStore }));
+      await waitFor(() => expect(result.current.history).toHaveLength(1));
+
+      await act(() => result.current.deleteHistoryEntry("1"));
+
+      expect(result.current.history).toHaveLength(0);
+      expect(historyStore.deleteHistoryEntry).toHaveBeenCalledWith("1");
+    });
+
+    it("clears all history, updating local state and the backing file", async () => {
+      const { readFile, writeFile } = makeFileStore(seededStore());
+      const entry = {
+        id: "1",
+        createdAt: "2026-08-31T09:12:00.000Z",
+        profileId: predefinedProfiles[0].id,
+        profileName: predefinedProfiles[0].name,
+        vendor: "openai",
+        mode: "rewrite",
+        inputText: "hi",
+        variants: ["hello"],
+      };
+      const historyStore = makeHistoryStore(`${JSON.stringify(entry)}\n`);
+      const engine = makeEngine(vi.fn());
+
+      const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile, ...historyStore }));
+      await waitFor(() => expect(result.current.history).toHaveLength(1));
+
+      await act(() => result.current.clearHistory());
+
+      expect(result.current.history).toHaveLength(0);
+      expect(historyStore.clearHistory).toHaveBeenCalledTimes(1);
+    });
+
+    it("loads a history entry's profile/input/context/mode/options back into compose", async () => {
+      const { readFile, writeFile } = makeFileStore(seededStore());
+      const entry: HistoryEntry = {
+        id: "1",
+        createdAt: "2026-08-31T09:12:00.000Z",
+        profileId: predefinedProfiles[1].id,
+        profileName: predefinedProfiles[1].name,
+        vendor: "openai",
+        mode: "generate",
+        inputText: "an instruction",
+        context: "keep it short",
+        options: { variantCount: 3 },
+        variants: ["a", "b", "c"],
+      };
+      const historyStore = makeHistoryStore(`${JSON.stringify(entry)}\n`);
+      const engine = makeEngine(vi.fn());
+
+      const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile, ...historyStore }));
+      await waitFor(() => expect(result.current.history).toHaveLength(1));
+
+      act(() => result.current.rerunHistoryEntry(entry));
+
+      expect(result.current.selectedProfileId).toBe(predefinedProfiles[1].id);
+      expect(result.current.inputText).toBe("an instruction");
+      expect(result.current.context).toBe("keep it short");
+      expect(result.current.mode).toBe("generate");
+      expect(result.current.optionsOverride).toEqual({ variantCount: 3 });
     });
   });
 });

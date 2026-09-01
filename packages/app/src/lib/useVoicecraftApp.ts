@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Engine, EngineError, GenerationOptions, Mode, VoiceProfile } from "@voicecraft/core";
 import { loadProfiles, serializeProfilesFile, type ReadFile, type WriteFile } from "./profileStore";
+import { parseHistoryFile, serializeHistoryEntry, type HistoryEntry } from "./historyStore";
 import { engineErrorMessage } from "./engineErrorMessage";
 import { DEFAULT_VENDOR, type Vendor } from "./vendor";
 
@@ -16,6 +17,10 @@ export type UseVoicecraftAppOptions = {
   engine: Engine;
   readFile: ReadFile;
   writeFile: WriteFile;
+  readHistoryFile?: () => Promise<string>;
+  appendHistoryEntry?: (entryJson: string) => Promise<void>;
+  deleteHistoryEntry?: (id: string) => Promise<void>;
+  clearHistory?: () => Promise<void>;
 };
 
 function slugify(name: string): string {
@@ -35,7 +40,15 @@ function uniqueId(base: string, existingIds: Set<string>): string {
   return `${base}-${n}`;
 }
 
-export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftAppOptions) {
+export function useVoicecraftApp({
+  engine,
+  readFile,
+  writeFile,
+  readHistoryFile = async () => "",
+  appendHistoryEntry = async () => {},
+  deleteHistoryEntry: deleteHistoryEntryFile = async () => {},
+  clearHistory: clearHistoryFile = async () => {},
+}: UseVoicecraftAppOptions) {
   const [profiles, setProfiles] = useState<VoiceProfile[]>([]);
   const [selectedProfileId, setSelectedProfileIdState] = useState<string | null>(null);
   const [activeVendor, setActiveVendor] = useState<Vendor>(DEFAULT_VENDOR);
@@ -51,6 +64,20 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
   // call time). Cleared whenever the selected profile changes, since an
   // override for one profile's settings has no meaning against another's.
   const [optionsOverride, setOptionsOverride] = useState<GenerationOptions | undefined>(undefined);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+
+  // Pre-fetched at startup alongside profiles (#67's decision) so switching
+  // to the History tab is always instant — no loading state needed there.
+  useEffect(() => {
+    let cancelled = false;
+    readHistoryFile().then((raw) => {
+      if (!cancelled) setHistory(parseHistoryFile(raw));
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setSelectedProfileId = useCallback((id: string) => {
     setSelectedProfileIdState(id);
@@ -114,10 +141,51 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
         variants: result.variants,
         requestedCount: options?.variantCount ?? 1,
       });
+
+      const entry: HistoryEntry = {
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        profileId: selectedProfile.id,
+        profileName: selectedProfile.name,
+        vendor: activeVendor,
+        mode,
+        inputText,
+        context: context.trim() || undefined,
+        options,
+        variants: result.variants,
+      };
+      setHistory((prev) => [entry, ...prev]);
+      void appendHistoryEntry(serializeHistoryEntry(entry));
     } catch (err) {
       setRun({ status: "error", message: engineErrorMessage(err as EngineError) });
     }
-  }, [engine, selectedProfile, inputText, mode, context, optionsOverride]);
+  }, [engine, selectedProfile, inputText, mode, context, optionsOverride, activeVendor, appendHistoryEntry]);
+
+  const deleteHistoryEntryAction = useCallback(
+    (id: string) => {
+      setHistory((prev) => prev.filter((e) => e.id !== id));
+      void deleteHistoryEntryFile(id);
+    },
+    [deleteHistoryEntryFile],
+  );
+
+  const clearHistoryAction = useCallback(() => {
+    setHistory([]);
+    void clearHistoryFile();
+  }, [clearHistoryFile]);
+
+  // "Rerun" (#66) — loads a past generation's profile, input, context, mode,
+  // and resolved options back into compose, ready to re-run or tweak further.
+  const rerunHistoryEntry = useCallback(
+    (entry: HistoryEntry) => {
+      setSelectedProfileId(entry.profileId);
+      setInputText(entry.inputText);
+      setContext(entry.context ?? "");
+      setModeState(entry.mode);
+      setOptionsOverride(entry.options);
+    },
+    [setSelectedProfileId],
+  );
 
   const saveProfile = useCallback(
     async (draft: ProfileDraft, existingId?: string) => {
@@ -159,5 +227,9 @@ export function useVoicecraftApp({ engine, readFile, writeFile }: UseVoicecraftA
     saveProfile,
     optionsOverride,
     setOptionsOverride,
+    history,
+    deleteHistoryEntry: deleteHistoryEntryAction,
+    clearHistory: clearHistoryAction,
+    rerunHistoryEntry,
   };
 }

@@ -10,6 +10,7 @@ use commands::hotkey::{
     capture_selected_text, check_accessibility_trusted, decide_hotkey_action, hud_accept, hud_reject,
     is_accessibility_trusted, open_accessibility_prefs, HotkeyAction,
 };
+use commands::history::{append_history_entry, clear_history, delete_history_entry, read_history_file};
 use commands::persistence::{last_used_profile_id, read_profiles_file, write_profiles_file};
 use commands::provider::call_provider;
 use commands::secrets::{get_api_key, set_api_key};
@@ -253,6 +254,10 @@ pub fn run() {
             hud_accept,
             hud_reject,
             update_last_used_profile_tray,
+            read_history_file,
+            append_history_entry,
+            delete_history_entry,
+            clear_history,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
