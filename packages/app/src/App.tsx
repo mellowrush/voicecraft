@@ -10,6 +10,8 @@ import { MainPanel } from "./components/MainPanel";
 import { ProfileModal } from "./components/ProfileModal";
 import { SettingsModal } from "./components/SettingsModal";
 import { Toast } from "./components/Toast";
+import { MotionVariantByKey, MotionVariantSwitcher, useMotionVariant } from "./components/motionVariants.prototype";
+import "./components/motionVariants.prototype.css";
 import "./App.css";
 
 function App() {
@@ -61,8 +63,17 @@ function App() {
       ? app.profiles.find((p) => p.id === app.editingProfileId)
       : undefined;
 
+  const motionVariant = useMotionVariant();
+  const showMotionDemo = !import.meta.env.PROD && new URLSearchParams(window.location.search).has("motion");
+
   return (
     <div className="app">
+      {showMotionDemo && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 9998, overflow: "auto" }}>
+          <MotionVariantByKey variant={motionVariant} />
+          <MotionVariantSwitcher current={motionVariant} />
+        </div>
+      )}
       <Sidebar
         profiles={app.profiles}
         selectedProfileId={app.selectedProfileId}
