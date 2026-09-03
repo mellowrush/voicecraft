@@ -40,10 +40,14 @@ export function HudWindow() {
       }
 
       try {
-        const result = (await engine.generate({ profile, text, mode: "rewrite" }, { stream: false })) as {
-          text: string;
-        };
-        setState({ status: "ready", profile, result: result.text });
+        // The HUD only ever shows one result (accept/reject, no variant
+        // switcher), so it always asks for a single variant regardless of
+        // the profile's default variantCount.
+        const result = (await engine.generate(
+          { profile, text, mode: "rewrite", options: { ...profile.defaultGenerationOptions, variantCount: 1 } },
+          { stream: false },
+        )) as { variants: string[] };
+        setState({ status: "ready", profile, result: result.variants[0] ?? "" });
       } catch (err) {
         setState({ status: "error", message: engineErrorMessage(err as EngineError) });
       }

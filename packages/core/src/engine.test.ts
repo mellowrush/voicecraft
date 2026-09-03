@@ -38,13 +38,71 @@ describe("createEngine", () => {
     expect(typeof promptArg).toBe("string");
   });
 
-  it("resolves { text } for a batch call", async () => {
+  it("resolves { variants: [text] } for a batch call with no variantCount set", async () => {
     const provider = vi.fn(async () => ({ text: "the response" }));
     const engine = createEngine({ provider });
 
     const result = await engine.generate(baseRequest());
 
-    expect(result).toEqual({ text: "the response" });
+    expect(result).toEqual({ variants: ["the response"] });
+  });
+
+  it("parses a multi-variant JSON response into { variants: [...] } when variantCount > 1", async () => {
+    const provider = vi.fn(async () => ({ text: '{"variants": ["one", "two", "three"]}' }));
+    const engine = createEngine({ provider });
+
+    const result = await engine.generate(baseRequest({ options: { variantCount: 3 } }));
+
+    expect(result).toEqual({ variants: ["one", "two", "three"] });
+  });
+
+  it("returns fewer variants than requested without erroring when the model returns fewer (partial success)", async () => {
+    const provider = vi.fn(async () => ({ text: '{"variants": ["only one"]}' }));
+    const engine = createEngine({ provider });
+
+    const result = await engine.generate(baseRequest({ options: { variantCount: 4 } }));
+
+    expect(result).toEqual({ variants: ["only one"] });
+  });
+
+  it("forces a batch call, ignoring opts.stream, when variantCount is greater than 1", async () => {
+    const provider = vi.fn(async (_prompt: string, opts: { stream?: boolean }) => {
+      expect(opts.stream).toBe(false);
+      return { text: '{"variants": ["one", "two"]}' };
+    });
+    const engine = createEngine({ provider });
+
+    const result = await engine.generate(baseRequest({ options: { variantCount: 2 } }), { stream: true });
+
+    expect(result).toEqual({ variants: ["one", "two"] });
+  });
+
+  it("strips diacritics from every variant when diacritics is 'strip' and the language is safe to strip", async () => {
+    const provider = vi.fn(async () => ({ text: "Bună ziua" }));
+    const engine = createEngine({ provider });
+
+    const result = await engine.generate(baseRequest({ options: { language: "ro", diacritics: "strip" } }));
+
+    expect(result).toEqual({ variants: ["Buna ziua"] });
+  });
+
+  it("does not strip diacritics for a language where stripping would be linguistically wrong", async () => {
+    const provider = vi.fn(async () => ({ text: "Türkçe metin" }));
+    const engine = createEngine({ provider });
+
+    const result = await engine.generate(baseRequest({ options: { language: "tr", diacritics: "strip" } }));
+
+    expect(result).toEqual({ variants: ["Türkçe metin"] });
+  });
+
+  it("rejects an invalid variantCount without calling the provider", () => {
+    const provider = vi.fn();
+    const engine = createEngine({ provider });
+
+    expect(() => engine.generate(baseRequest({ options: { variantCount: 7 } }))).toThrow(
+      expect.objectContaining({ code: "invalid_request" }),
+    );
+    expect(provider).not.toHaveBeenCalled();
   });
 
   it("resolves an AsyncIterable<{ delta }> for a streaming call", async () => {

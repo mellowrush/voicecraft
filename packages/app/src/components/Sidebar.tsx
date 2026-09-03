@@ -1,10 +1,5 @@
-import { useState } from "react";
 import type { VoiceProfile } from "@voicecraft/core";
 import { isPredefined } from "../lib/predefinedProfiles";
-import { LogoMarkByVariant, LogoVariantSwitcher, useLogoVariant } from "./logoMarkVariants.prototype";
-import "./logoMarkVariants.prototype.css";
-import { HistorySidebarSectionA, useHistoryUIVariant } from "./historyBrowsing.prototype";
-import "./historyBrowsing.prototype.css";
 
 type Props = {
   profiles: VoiceProfile[];
@@ -12,17 +7,23 @@ type Props = {
   onSelect: (id: string) => void;
   onNew: () => void;
   onEdit: (id: string) => void;
-  /** PROTOTYPE (#44) — live rewrite-in-flight signal, only consumed by logo variant D. */
-  isProcessing?: boolean;
 };
 
-export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit, isProcessing = false }: Props) {
-  const logoVariant = useLogoVariant();
-  // PROTOTYPE (#66) — mocked history section, variant A only.
-  const historyVariant = useHistoryUIVariant();
-  // PROTOTYPE (#44) — lets you preview variant D's live-status ring without a real
-  // rewrite in flight; has no effect on any other variant.
-  const [simulateProcessing, setSimulateProcessing] = useState(false);
+// The Field Notebook mark (#44, variant C): a circular instrument-dial badge
+// carries the expressive weight; the wordmark stays plain, no gradient/serif.
+function LogoMark() {
+  return (
+    <span className="wordmark">
+      <svg className="mark" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="16" fill="var(--color-stamp-red)" />
+        <path d="M9 17 L13 11 L17 20 L21 8" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+      </svg>
+      Voicecraft
+    </span>
+  );
+}
+
+export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit }: Props) {
   const predefined = profiles.filter(isPredefined);
   const custom = profiles.filter((p) => !isPredefined(p));
 
@@ -65,21 +66,11 @@ export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit, 
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
-        <LogoMarkByVariant variant={logoVariant} isProcessing={isProcessing || simulateProcessing} />
+        <LogoMark />
         <button className="new-btn" title="New voice profile" aria-label="New voice profile" onClick={onNew}>
           +
         </button>
       </div>
-      <LogoVariantSwitcher current={logoVariant} />
-      {logoVariant === "D" && !import.meta.env.PROD && (
-        <button
-          type="button"
-          className="proto-mark-d__sim-toggle"
-          onClick={() => setSimulateProcessing((v) => !v)}
-        >
-          {simulateProcessing ? "Stop" : "Simulate"} processing
-        </button>
-      )}
 
       <div className="sidebar-list">
         <p className="section-label">Predefined</p>
@@ -89,8 +80,6 @@ export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit, 
         {custom.length === 0 && <p className="empty-hint">No custom profiles yet</p>}
         {custom.map((p) => renderItem(p, true))}
       </div>
-
-      {historyVariant === "A" && <HistorySidebarSectionA />}
     </aside>
   );
 }

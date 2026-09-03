@@ -3,6 +3,7 @@ import { createEngine } from "@voicecraft/core";
 import { useVoicecraftApp } from "./lib/useVoicecraftApp";
 import { tauriProvider } from "./lib/providerClient";
 import { readProfilesFile, writeProfilesFile } from "./lib/tauriProfileFile";
+import { appendHistoryEntry, clearHistory, deleteHistoryEntry, readHistoryFile } from "./lib/tauriHistoryFile";
 import { updateTrayLastUsedProfile } from "./lib/hotkeyClient";
 import { Sidebar } from "./components/Sidebar";
 import { MainPanel } from "./components/MainPanel";
@@ -13,7 +14,15 @@ import "./App.css";
 
 function App() {
   const engine = useMemo(() => createEngine({ provider: tauriProvider }), []);
-  const app = useVoicecraftApp({ engine, readFile: readProfilesFile, writeFile: writeProfilesFile });
+  const app = useVoicecraftApp({
+    engine,
+    readFile: readProfilesFile,
+    writeFile: writeProfilesFile,
+    readHistoryFile,
+    appendHistoryEntry,
+    deleteHistoryEntry,
+    clearHistory,
+  });
 
   // Keeps the tray's "last used" label in sync with the window app's
   // selection, so the menu bar reflects it without polling from Rust.
@@ -60,7 +69,6 @@ function App() {
         onSelect={app.setSelectedProfileId}
         onNew={() => app.setEditingProfileId("new")}
         onEdit={(id) => app.setEditingProfileId(id)}
-        isProcessing={app.run.status === "loading"}
       />
 
       <MainPanel
@@ -77,6 +85,12 @@ function App() {
         onViewChange={app.setView}
         onCopy={handleCopy}
         onOpenSettings={() => setSettingsOpen(true)}
+        optionsOverride={app.optionsOverride}
+        onOptionsOverrideChange={app.setOptionsOverride}
+        history={app.history}
+        onRerunHistoryEntry={app.rerunHistoryEntry}
+        onDeleteHistoryEntry={app.deleteHistoryEntry}
+        onClearHistory={app.clearHistory}
       />
 
       <ProfileModal

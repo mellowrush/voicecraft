@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { generationOptionsSchema } from "./generation-options.js";
 
 export const voiceProfileSchema = z
   .object({
@@ -17,7 +18,7 @@ export const voiceProfileSchema = z
       )
       .optional(),
     constraints: z.array(z.string()).optional(),
-    language: z.string().optional(),
+    defaultGenerationOptions: generationOptionsSchema.optional(),
   })
   .strict();
 

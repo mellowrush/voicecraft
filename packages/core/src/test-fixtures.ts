@@ -13,7 +13,7 @@ export const noirDetective: VoiceProfile = {
     },
   ],
   constraints: ["never break the noir voice with modern slang", "keep sentences short"],
-  language: "en",
+  defaultGenerationOptions: { language: "en" },
 };
 
 export const encouragingCoach: VoiceProfile = {
@@ -23,7 +23,7 @@ export const encouragingCoach: VoiceProfile = {
     "A warm, upbeat coach who reframes setbacks as progress and always ends on a forward-looking note.",
   tags: ["warm", "upbeat"],
   constraints: ["never use guilt or shame language"],
-  language: "en",
+  defaultGenerationOptions: { language: "en" },
 };
 
 export const bareMinimum: VoiceProfile = {

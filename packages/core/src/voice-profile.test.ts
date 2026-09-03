@@ -67,4 +67,48 @@ describe("voiceProfileSchema", () => {
   it("accepts a minimal profile as a VoiceProfile value without optional fields", () => {
     expect(voiceProfileSchema.safeParse(bareMinimum).success).toBe(true);
   });
+
+  describe("defaultGenerationOptions", () => {
+    it("accepts a profile with a fully populated defaultGenerationOptions", () => {
+      const profile = {
+        ...bareMinimum,
+        defaultGenerationOptions: { targetLength: 120, variantCount: 3, language: "ro", diacritics: "strip" },
+      };
+      expect(voiceProfileSchema.safeParse(profile).success).toBe(true);
+    });
+
+    it("accepts a profile without defaultGenerationOptions", () => {
+      expect(voiceProfileSchema.safeParse(bareMinimum).success).toBe(true);
+    });
+
+    it("rejects a variantCount below 1", () => {
+      const profile = { ...bareMinimum, defaultGenerationOptions: { variantCount: 0 } };
+      expect(voiceProfileSchema.safeParse(profile).success).toBe(false);
+    });
+
+    it("rejects a variantCount above 6", () => {
+      const profile = { ...bareMinimum, defaultGenerationOptions: { variantCount: 7 } };
+      expect(voiceProfileSchema.safeParse(profile).success).toBe(false);
+    });
+
+    it("rejects a non-integer variantCount", () => {
+      const profile = { ...bareMinimum, defaultGenerationOptions: { variantCount: 2.5 } };
+      expect(voiceProfileSchema.safeParse(profile).success).toBe(false);
+    });
+
+    it("rejects a diacritics value outside the enum", () => {
+      const profile = { ...bareMinimum, defaultGenerationOptions: { diacritics: "force" } };
+      expect(voiceProfileSchema.safeParse(profile).success).toBe(false);
+    });
+
+    it("rejects an unexpected extra key inside defaultGenerationOptions", () => {
+      const profile = { ...bareMinimum, defaultGenerationOptions: { unknownField: true } };
+      expect(voiceProfileSchema.safeParse(profile).success).toBe(false);
+    });
+
+    it("rejects a top-level language field now that it has moved into defaultGenerationOptions", () => {
+      const profile = { ...bareMinimum, language: "en" };
+      expect(voiceProfileSchema.safeParse(profile).success).toBe(false);
+    });
+  });
 });

@@ -1,9 +1,11 @@
 import { useState } from "react";
-import type { Mode, VoiceProfile } from "@voicecraft/core";
+import type { GenerationOptions, Mode, VoiceProfile } from "@voicecraft/core";
 import type { RunStatus } from "../lib/useVoicecraftApp";
+import type { HistoryEntry } from "../lib/historyStore";
+import { CopyButton } from "./CopyButton";
 import { DiffView } from "./DiffView";
-import { HistoryButtonB, HistoryFullViewC, HistoryVariantSwitcher, MainHeaderTabsC, useHistoryUIVariant } from "./historyBrowsing.prototype";
-import "./historyBrowsing.prototype.css";
+import { GenerationOptionsFields } from "./GenerationOptionsFields";
+import { HistoryView } from "./HistoryView";
 
 type Props = {
   profile: VoiceProfile | null;
@@ -19,6 +21,12 @@ type Props = {
   onViewChange: (view: "result" | "diff") => void;
   onCopy: (text: string) => void;
   onOpenSettings: () => void;
+  optionsOverride: GenerationOptions | undefined;
+  onOptionsOverrideChange: (options: GenerationOptions | undefined) => void;
+  history: HistoryEntry[];
+  onRerunHistoryEntry: (entry: HistoryEntry) => void;
+  onDeleteHistoryEntry: (id: string) => void;
+  onClearHistory: () => void;
 };
 
 export function MainPanel({
@@ -35,14 +43,29 @@ export function MainPanel({
   onViewChange,
   onCopy,
   onOpenSettings,
+  optionsOverride,
+  onOptionsOverrideChange,
+  history,
+  onRerunHistoryEntry,
+  onDeleteHistoryEntry,
+  onClearHistory,
 }: Props) {
   const isRewrite = mode === "rewrite";
   const isLoading = run.status === "loading";
-  const resultText = run.status === "success" ? run.text : "";
-
-  // PROTOTYPE (#66) — mocked history browsing UI, variants B/C.
-  const historyVariant = useHistoryUIVariant();
-  const [historyTab, setHistoryTab] = useState<"compose" | "history">("compose");
+  const variants = run.status === "success" ? run.variants : [];
+  // Diff only compares one before/after pair, so it's only offered when the
+  // call actually produced exactly one variant.
+  const canShowDiff = isRewrite && variants.length === 1;
+  // If a stale "diff" selection no longer applies (e.g. a multi-variant
+  // result came back after Diff was selected for a single-variant one),
+  // fall back to Result rather than rendering a Diff button that looks
+  // active while Result content is actually shown.
+  const effectiveView = canShowDiff ? view : "result";
+  const effectiveOptions = optionsOverride ?? profile?.defaultGenerationOptions ?? {};
+  const skeletonCount = effectiveOptions.variantCount ?? 1;
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const isCustomized = optionsOverride !== undefined;
+  const [activeTab, setActiveTab] = useState<"compose" | "history">("compose");
 
   return (
     <main className="main">
@@ -53,9 +76,7 @@ export function MainPanel({
         </div>
 
         <div className="header-actions">
-          {historyVariant === "C" ? (
-            <MainHeaderTabsC tab={historyTab} onTabChange={setHistoryTab} />
-          ) : (
+          {activeTab === "compose" && (
             <div className="mode-toggle" role="group" aria-label="Mode">
               <button
                 className={`mode-btn${isRewrite ? " active" : ""}`}
@@ -73,15 +94,39 @@ export function MainPanel({
               </button>
             </div>
           )}
-          {historyVariant === "B" && <HistoryButtonB />}
+          <div className="mode-toggle" role="group" aria-label="View">
+            <button
+              className={`mode-btn${activeTab === "compose" ? " active" : ""}`}
+              aria-pressed={activeTab === "compose"}
+              onClick={() => setActiveTab("compose")}
+            >
+              Compose
+            </button>
+            <button
+              className={`mode-btn${activeTab === "history" ? " active" : ""}`}
+              aria-pressed={activeTab === "history"}
+              onClick={() => setActiveTab("history")}
+            >
+              History
+            </button>
+          </div>
           <button className="settings-btn" title="Settings" aria-label="Settings" onClick={onOpenSettings}>
             ⚙
           </button>
         </div>
       </div>
 
-      {historyVariant === "C" && historyTab === "history" ? (
-        <HistoryFullViewC onRerun={() => setHistoryTab("compose")} />
+      {activeTab === "history" ? (
+        <HistoryView
+          history={history}
+          onRerun={(entry) => {
+            onRerunHistoryEntry(entry);
+            setActiveTab("compose");
+          }}
+          onDelete={onDeleteHistoryEntry}
+          onClearAll={onClearHistory}
+          onCopy={onCopy}
+        />
       ) : (
         <>
       <div className="context-row">
@@ -119,54 +164,79 @@ export function MainPanel({
               {isRewrite && (
                 <div className="view-toggle" role="group" aria-label="View">
                   <button
-                    className={`view-btn${view === "result" ? " active" : ""}`}
-                    aria-pressed={view === "result"}
+                    className={`view-btn${effectiveView === "result" ? " active" : ""}`}
+                    aria-pressed={effectiveView === "result"}
                     onClick={() => onViewChange("result")}
                   >
                     Result
                   </button>
                   <button
-                    className={`view-btn${view === "diff" ? " active" : ""}`}
-                    aria-pressed={view === "diff"}
+                    className={`view-btn${effectiveView === "diff" ? " active" : ""}`}
+                    aria-pressed={effectiveView === "diff"}
+                    disabled={!canShowDiff}
+                    title={canShowDiff ? undefined : "Diff is only available for a single-variant result"}
                     onClick={() => onViewChange("diff")}
                   >
                     Diff
                   </button>
                 </div>
               )}
-              <button
-                className="copy-btn"
-                title="Copy to clipboard"
-                aria-label="Copy to clipboard"
-                disabled={run.status !== "success"}
-                onClick={() => onCopy(resultText)}
-              >
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-                  <rect x="7" y="7" width="10" height="10" rx="2" />
-                  <path d="M4 13V5a2 2 0 0 1 2-2h8" />
-                </svg>
-              </button>
             </div>
           </div>
 
           <div className="result-box" aria-live="polite">
             {isLoading && (
-              <div className="skeleton active" aria-hidden="true">
-                <div className="skeleton-line" style={{ width: "95%" }} />
-                <div className="skeleton-line" style={{ width: "88%" }} />
-                <div className="skeleton-line" style={{ width: "60%" }} />
+              <div className="variant-stack" aria-hidden="true">
+                {Array.from({ length: skeletonCount }, (_, i) => (
+                  <div className="variant-card" key={i}>
+                    <div className="skeleton active">
+                      <div className="skeleton-line" style={{ width: "95%" }} />
+                      <div className="skeleton-line" style={{ width: "88%" }} />
+                      <div className="skeleton-line" style={{ width: "60%" }} />
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
             {!isLoading && run.status === "error" && <p className="result-error">{run.message}</p>}
-            {!isLoading && run.status === "success" && isRewrite && view === "diff" && (
-              <DiffView before={inputText} after={run.text} />
+            {!isLoading && run.status === "success" && effectiveView === "diff" && (
+              <DiffView before={inputText} after={variants[0]} />
             )}
-            {!isLoading && run.status === "success" && (!isRewrite || view === "result") && (
-              <p className="result-plain">{run.text}</p>
+            {!isLoading && run.status === "success" && effectiveView === "result" && (
+              <div className="variant-stack">
+                {variants.map((text, i) => (
+                  <div className="variant-card" key={i}>
+                    <div className="variant-card-head">
+                      <span>Variant {i + 1}</span>
+                      <CopyButton text={text} label={`Copy variant ${i + 1}`} onCopy={onCopy} />
+                    </div>
+                    <p className="result-plain">{text}</p>
+                  </div>
+                ))}
+                {variants.length < run.requestedCount && (
+                  <p className="variant-partial-notice">
+                    Generated {variants.length} of {run.requestedCount} requested variants.
+                  </p>
+                )}
+              </div>
             )}
             {!isLoading && run.status === "idle" && <p className="result-placeholder">Result will appear here.</p>}
           </div>
         </div>
+      </div>
+
+      <div className="override-drawer-wrap">
+        <button type="button" className="override-drawer-toggle" onClick={() => setDrawerOpen((v) => !v)}>
+          {drawerOpen ? "▾" : "▸"} Adjust for this generation{isCustomized ? " · customized" : ""}
+        </button>
+        {drawerOpen && (
+          <div className="override-drawer">
+            <GenerationOptionsFields value={effectiveOptions} onChange={onOptionsOverrideChange} />
+            <button type="button" className="btn-ghost" onClick={() => onOptionsOverrideChange(undefined)}>
+              Reset to profile defaults
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="action-bar">
@@ -185,8 +255,6 @@ export function MainPanel({
       </div>
         </>
       )}
-
-      <HistoryVariantSwitcher current={historyVariant} />
     </main>
   );
 }
