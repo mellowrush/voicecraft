@@ -42,9 +42,17 @@
   height: 24px;
   flex-shrink: 0;
 }
+.proto-mark-d--papier .proto-mark-d__badge {
+  width: 27px;
+  height: 27px;
+}
 .proto-mark-d__ring path {
   stroke: var(--color-cobalt, #306fe8);
   transition: stroke 0.3s ease;
+}
+.proto-mark-d__ring--shadow path {
+  stroke: #a9c6f5;
+  transform: translate(0.8px, 1.1px);
 }
 .proto-mark-d__ring {
   transform-origin: 14px 14px;

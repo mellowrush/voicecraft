@@ -98,18 +98,33 @@ export function LogoMarkC() {
 // deliberately expressive mark, and this keeps it as the only one.
 export function LogoMarkD({ isProcessing = false }: { isProcessing?: boolean }) {
   return (
-    <span className="wordmark proto-mark-d">
+    <span className="wordmark proto-mark-d proto-mark-d--papier">
       <svg className="proto-mark-d__badge" viewBox="0 0 28 28" aria-hidden="true">
-        <g className={`proto-mark-d__ring${isProcessing ? " is-processing" : ""}`}>
-          <path d="M20 3.6 A12 12 0 1 1 8 3.6" fill="none" strokeWidth="1.4" strokeLinecap="round" />
-        </g>
-        <path d="M9 9 L14 20 L19 9" stroke="url(#mark-grad-d)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         <defs>
           <linearGradient id="mark-grad-d" x1="0" y1="9" x2="0" y2="20">
             <stop offset="0" stopColor="#5897f7" />
             <stop offset="1" stopColor="#3872e6" />
           </linearGradient>
+          <filter id="mark-papier-shadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="0.8" stdDeviation="0.5" floodColor="#2c65d3" floodOpacity="0.35" />
+          </filter>
         </defs>
+        {/* paper-cut shadow layer, offset behind the ring for stacked-paper depth */}
+        <g className={`proto-mark-d__ring proto-mark-d__ring--shadow${isProcessing ? " is-processing" : ""}`}>
+          <path d="M20.4 4 C25 6.5 26.8 12.5 24.5 17.8 C22.2 23 15.8 25.6 10 23.2" fill="none" strokeWidth="3.2" strokeLinecap="round" />
+        </g>
+        <g className={`proto-mark-d__ring${isProcessing ? " is-processing" : ""}`} filter="url(#mark-papier-shadow)">
+          <path d="M20 3.6 C25.5 5.8 27.3 12.2 24.8 17.6 C22.3 23 15.3 25.7 9.2 23 C7.6 22.3 6.6 21.3 5.8 20.2" fill="none" strokeWidth="2.6" strokeLinecap="round" />
+        </g>
+        <path
+          d="M8.3 8.7 C9.6 12.2 12 17.5 14.3 20.4 C16.6 16.7 18.6 12.3 19.8 8.4"
+          stroke="url(#mark-grad-d)"
+          strokeWidth="4.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+          filter="url(#mark-papier-shadow)"
+        />
       </svg>
       <span className="proto-mark-b__rest">oicecraft</span>
     </span>
