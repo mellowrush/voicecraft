@@ -73,4 +73,27 @@ describe("HudWindow", () => {
 
     expect(invokeMock.mock.calls.filter(([cmd]) => cmd === "hud_reject")).toHaveLength(1);
   });
+
+  it("drops a duplicate hotkey trigger while a call is already in flight (#88)", async () => {
+    let resolveCallProvider: (text: string) => void = () => {};
+    invokeMock.mockImplementation(async (cmd: string) => {
+      if (cmd === "read_profiles_file") return JSON.stringify({ profiles: [PROFILE], lastUsedProfileId: "p1" });
+      if (cmd === "call_provider") return new Promise<string>((resolve) => (resolveCallProvider = resolve));
+      throw new Error(`unexpected invoke: ${cmd}`);
+    });
+
+    render(<HudWindow />);
+    await waitFor(() => expect(selectionHandler).toBeDefined());
+
+    selectionHandler({ payload: { text: "first", profileId: "p1" } });
+    await waitFor(() => expect(invokeMock.mock.calls.filter(([cmd]) => cmd === "call_provider")).toHaveLength(1));
+
+    // Second trigger while the first is still in flight — must not start a
+    // second concurrent call_provider invocation.
+    selectionHandler({ payload: { text: "second", profileId: "p1" } });
+    resolveCallProvider("Rewritten text");
+    await waitFor(() => expect(screen.getByText("Rewritten text")).toBeInTheDocument());
+
+    expect(invokeMock.mock.calls.filter(([cmd]) => cmd === "call_provider")).toHaveLength(1);
+  });
 });
