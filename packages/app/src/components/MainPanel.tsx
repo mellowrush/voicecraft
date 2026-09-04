@@ -81,6 +81,11 @@ export function MainPanel({
   const { entries: mockSavingsEntries, toggleEmpty } = useMockSavingsEntries();
   const showSavingsTab = savingsVariant !== "current";
 
+  // PROTOTYPE (#91) — mock cache-hit badge toggle. Real implementation reads
+  // `run.dedupeHit` (added to RunStatus's "success" case, set by runAction's
+  // cache check per #86) instead of this local mock state.
+  const [mockDedupeHit, setMockDedupeHit] = useState(false);
+
   return (
     <main className="main">
       <div className="main-header">
@@ -190,6 +195,21 @@ export function MainPanel({
               Result
             </p>
             <div className="toolbar-right">
+              {!isLoading && run.status === "success" && mockDedupeHit && (
+                <span className="cache-hit-badge" title="Served from cache — no API call made">
+                  ⚡ cached
+                </span>
+              )}
+              {!import.meta.env.PROD && (
+                <button
+                  type="button"
+                  className="proto-cache-toggle"
+                  onClick={() => setMockDedupeHit((v) => !v)}
+                  title="PROTOTYPE (#91) — toggle mock cache-hit badge"
+                >
+                  {mockDedupeHit ? "◆" : "◇"}
+                </button>
+              )}
               {isRewrite && (
                 <div className="view-toggle" role="group" aria-label="View">
                   <button
