@@ -6,6 +6,15 @@ import { CopyButton } from "./CopyButton";
 import { DiffView } from "./DiffView";
 import { GenerationOptionsFields } from "./GenerationOptionsFields";
 import { HistoryView } from "./HistoryView";
+import {
+  SavingsPanelA,
+  SavingsPanelB,
+  SavingsPanelC,
+  SavingsVariantSwitcher,
+  useMockSavingsEntries,
+  useSavingsUIVariant,
+} from "./savingsPanel.prototype";
+import "./savingsPanel.prototype.css";
 
 type Props = {
   profile: VoiceProfile | null;
@@ -65,7 +74,12 @@ export function MainPanel({
   const skeletonCount = effectiveOptions.variantCount ?? 1;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isCustomized = optionsOverride !== undefined;
-  const [activeTab, setActiveTab] = useState<"compose" | "history">("compose");
+  const [activeTab, setActiveTab] = useState<"compose" | "history" | "savings">("compose");
+
+  // PROTOTYPE (#90) — mocked savings tab, variants A/B/C.
+  const savingsVariant = useSavingsUIVariant();
+  const { entries: mockSavingsEntries, toggleEmpty } = useMockSavingsEntries();
+  const showSavingsTab = savingsVariant !== "current";
 
   return (
     <main className="main">
@@ -109,6 +123,15 @@ export function MainPanel({
             >
               History
             </button>
+            {showSavingsTab && (
+              <button
+                className={`mode-btn${activeTab === "savings" ? " active" : ""}`}
+                aria-pressed={activeTab === "savings"}
+                onClick={() => setActiveTab("savings")}
+              >
+                Savings
+              </button>
+            )}
           </div>
           <button className="settings-btn" title="Settings" aria-label="Settings" onClick={onOpenSettings}>
             ⚙
@@ -116,7 +139,13 @@ export function MainPanel({
         </div>
       </div>
 
-      {activeTab === "history" ? (
+      {activeTab === "savings" ? (
+        <>
+          {savingsVariant === "A" && <SavingsPanelA entries={mockSavingsEntries} />}
+          {savingsVariant === "B" && <SavingsPanelB entries={mockSavingsEntries} />}
+          {savingsVariant === "C" && <SavingsPanelC entries={mockSavingsEntries} />}
+        </>
+      ) : activeTab === "history" ? (
         <HistoryView
           history={history}
           onRerun={(entry) => {
@@ -254,6 +283,9 @@ export function MainPanel({
         </button>
       </div>
         </>
+      )}
+      {showSavingsTab && (
+        <SavingsVariantSwitcher current={savingsVariant} entries={mockSavingsEntries} onToggleEmpty={toggleEmpty} />
       )}
     </main>
   );
