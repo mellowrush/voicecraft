@@ -10,6 +10,15 @@ type Props = {
   onCopy: (text: string) => void;
 };
 
+// Icon language matches CopyButton: stroke-only, round caps, currentColor.
+function DeleteIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+      <path d="M6 6l8 8M14 6l-8 8" />
+    </svg>
+  );
+}
+
 function formatTime(iso: string) {
   return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
@@ -76,7 +85,7 @@ export function HistoryView({ history, onRerun, onDelete, onClearAll, onCopy }: 
                     onDelete(entry.id);
                   }}
                 >
-                  ×
+                  <DeleteIcon />
                 </button>
               </div>
             </div>

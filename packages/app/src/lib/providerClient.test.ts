@@ -5,7 +5,7 @@ import { serializeProfilesFile } from "./profileStore";
 
 vi.mock("@tauri-apps/api/core", () => ({ invoke: vi.fn() }));
 
-const { tauriProvider, parseProviderCallError } = await import("./providerClient");
+const { tauriProvider, parseProviderCallError, lastProviderUsage } = await import("./providerClient");
 
 describe("tauriProvider", () => {
   beforeEach(() => {
@@ -17,7 +17,9 @@ describe("tauriProvider", () => {
       if (cmd === "read_profiles_file") {
         return serializeProfilesFile({ profiles: [], lastUsedProfileId: null, activeVendor: "anthropic" });
       }
-      if (cmd === "call_provider") return "rewritten text";
+      if (cmd === "call_provider") {
+        return { text: "rewritten text", usage: { inputTokens: 42, outputTokens: 18 } };
+      }
       throw new Error(`unexpected invoke: ${String(cmd)}`);
     });
 
@@ -25,6 +27,22 @@ describe("tauriProvider", () => {
 
     expect(invoke).toHaveBeenCalledWith("call_provider", { prompt: "some prompt", vendor: "anthropic" });
     expect(result).toEqual({ text: "rewritten text" });
+  });
+
+  it("captures usage into lastProviderUsage without exposing it through the Provider return value", async () => {
+    vi.mocked(invoke).mockImplementation(async (cmd) => {
+      if (cmd === "read_profiles_file") {
+        return serializeProfilesFile({ profiles: [], lastUsedProfileId: null, activeVendor: "openai" });
+      }
+      if (cmd === "call_provider") {
+        return { text: "hi", usage: { inputTokens: 100, outputTokens: 50, cacheReadTokens: 20 } };
+      }
+      throw new Error(`unexpected invoke: ${String(cmd)}`);
+    });
+
+    await tauriProvider("prompt", {});
+
+    expect(lastProviderUsage.current).toEqual({ inputTokens: 100, outputTokens: 50, cacheReadTokens: 20 });
   });
 
   it("normalizes a rate_limited rejection into a RateLimitError", async () => {

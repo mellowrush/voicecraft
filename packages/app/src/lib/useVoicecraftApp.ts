@@ -4,6 +4,7 @@ import { loadProfiles, serializeProfilesFile, type ReadFile, type WriteFile } fr
 import { parseHistoryFile, serializeHistoryEntry, type HistoryEntry } from "./historyStore";
 import { engineErrorMessage } from "./engineErrorMessage";
 import { DEFAULT_VENDOR, type Vendor } from "./vendor";
+import { lastProviderUsage } from "./providerClient";
 
 export type RunStatus =
   | { status: "idle" }
@@ -151,6 +152,14 @@ export function useVoicecraftApp({
         requestedCount: options?.variantCount ?? 1,
       });
 
+      // Read right after generate() resolves — only one call is ever in
+      // flight (buttons/hotkey are guarded, #88), so this is always the
+      // usage this specific call produced. Reset after reading so a Provider
+      // that never populates it (e.g. a test double) doesn't leak a stale
+      // value into the next entry (#94).
+      const usage = lastProviderUsage.current ?? { inputTokens: 0, outputTokens: 0 };
+      lastProviderUsage.current = null;
+
       const entry: HistoryEntry = {
         id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
@@ -162,6 +171,9 @@ export function useVoicecraftApp({
         context: context.trim() || undefined,
         options,
         variants: result.variants,
+        usage,
+        dedupeHit: false,
+        compressed: false,
       };
       setHistory((prev) => [entry, ...prev]);
       void appendHistoryEntry(serializeHistoryEntry(entry));

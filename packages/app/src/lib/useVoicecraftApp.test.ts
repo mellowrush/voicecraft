@@ -455,6 +455,9 @@ describe("useVoicecraftApp", () => {
         context: "keep it short",
         options: { variantCount: 3 },
         variants: ["a", "b", "c"],
+        usage: { inputTokens: 0, outputTokens: 0 },
+        dedupeHit: false,
+        compressed: false,
       };
       const historyStore = makeHistoryStore(`${JSON.stringify(entry)}\n`);
       const engine = makeEngine(vi.fn());
@@ -490,6 +493,9 @@ describe("useVoicecraftApp", () => {
         inputText: "an instruction",
         options: { variantCount: 3 },
         variants: ["a", "b", "c"],
+        usage: { inputTokens: 0, outputTokens: 0 },
+        dedupeHit: false,
+        compressed: false,
       };
       const historyStore = makeHistoryStore(`${JSON.stringify(entry)}\n`);
       const engine = makeEngine(vi.fn());

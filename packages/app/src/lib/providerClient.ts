@@ -3,6 +3,14 @@ import { RateLimitError, type Provider } from "@voicecraft/core";
 import { readProfilesFile } from "./tauriProfileFile";
 import { parseProfilesFile } from "./profileStore";
 
+// Vendor usage, normalized to one shape by Rust (see provider.rs) — ADR-0009
+// / #94. Rides alongside the Provider call via `lastProviderUsage` below,
+// never inside core's Engine/Provider contract (ADR-0002 stays untouched).
+export type ProviderUsage = { inputTokens: number; outputTokens: number; cacheReadTokens?: number };
+
+// Shape the Rust `call_provider` command resolves with.
+type ProviderCallResult = { text: string; usage: ProviderUsage };
+
 // Shape the Rust `call_provider` command rejects with (see src-tauri).
 export type ProviderCallError =
   | { kind: "rate_limited"; message: string; retryAfterMs?: number }
@@ -36,6 +44,14 @@ export function toEngineFacingError(err: unknown): Error {
   return new Error(parsed.message);
 }
 
+// Usage from the most recent tauriProvider call, for runAction to read
+// right after `engine.generate()` resolves (ADR-0009 / #94) — a shared
+// mutable box rather than a return-value change, since core's `Provider`
+// type must keep returning only `{text}` (ADR-0002). Safe because only one
+// generate() call is ever in flight at a time (buttons/hotkey are guarded),
+// so there's no risk of reading a different call's usage.
+export const lastProviderUsage: { current: ProviderUsage | null } = { current: null };
+
 // Satisfies core's `Provider` type by proxying the actual HTTP call through
 // the Rust backend — the API key never enters this (webview) context. Reads
 // the active vendor fresh from the shared profiles file (not React state)
@@ -44,7 +60,8 @@ export function toEngineFacingError(err: unknown): Error {
 export const tauriProvider: Provider = async (prompt) => {
   try {
     const { activeVendor } = parseProfilesFile(await readProfilesFile());
-    const text = await invoke<string>("call_provider", { prompt, vendor: activeVendor });
+    const { text, usage } = await invoke<ProviderCallResult>("call_provider", { prompt, vendor: activeVendor });
+    lastProviderUsage.current = usage;
     return { text };
   } catch (err) {
     throw toEngineFacingError(err);

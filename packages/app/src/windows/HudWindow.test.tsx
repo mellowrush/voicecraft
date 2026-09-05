@@ -26,7 +26,7 @@ beforeEach(() => {
   invokeMock.mockReset();
   invokeMock.mockImplementation(async (cmd: string) => {
     if (cmd === "read_profiles_file") return JSON.stringify({ profiles: [PROFILE], lastUsedProfileId: "p1" });
-    if (cmd === "call_provider") return "Rewritten text";
+    if (cmd === "call_provider") return { text: "Rewritten text", usage: { inputTokens: 10, outputTokens: 5 } };
     if (cmd === "hud_accept") return undefined;
     if (cmd === "hud_reject") return undefined;
     throw new Error(`unexpected invoke: ${cmd}`);

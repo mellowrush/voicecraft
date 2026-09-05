@@ -23,6 +23,23 @@ function LogoMark() {
   );
 }
 
+// Icon language matches CopyButton: stroke-only, round caps/joins, currentColor.
+function PlusIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden="true">
+      <path d="M10 5v10M5 10h10" />
+    </svg>
+  );
+}
+
+function EditIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M13.4 3.4a1.6 1.6 0 0 1 2.3 2.3L7 14.5l-3.2.8.8-3.2z" />
+    </svg>
+  );
+}
+
 export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit }: Props) {
   const predefined = profiles.filter(isPredefined);
   const custom = profiles.filter((p) => !isPredefined(p));
@@ -57,7 +74,7 @@ export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit }
             onEdit(profile.id);
           }}
         >
-          ✎
+          <EditIcon />
         </button>
       )}
     </div>
@@ -68,7 +85,7 @@ export function Sidebar({ profiles, selectedProfileId, onSelect, onNew, onEdit }
       <div className="sidebar-header">
         <LogoMark />
         <button className="new-btn" title="New voice profile" aria-label="New voice profile" onClick={onNew}>
-          +
+          <PlusIcon />
         </button>
       </div>
 
