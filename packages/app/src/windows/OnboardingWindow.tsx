@@ -60,7 +60,7 @@ export function OnboardingWindow() {
             height="20"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#3161df"
+            stroke="var(--color-stamp-red-deep)"
             strokeWidth="1.7"
             aria-hidden="true"
           >

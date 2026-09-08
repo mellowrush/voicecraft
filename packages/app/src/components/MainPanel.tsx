@@ -6,6 +6,15 @@ import { CopyButton } from "./CopyButton";
 import { DiffView } from "./DiffView";
 import { GenerationOptionsFields } from "./GenerationOptionsFields";
 import { HistoryView } from "./HistoryView";
+import {
+  SavingsPanelA,
+  SavingsPanelB,
+  SavingsPanelC,
+  SavingsVariantSwitcher,
+  useMockSavingsEntries,
+  useSavingsUIVariant,
+} from "./savingsPanel.prototype";
+import "./savingsPanel.prototype.css";
 
 type Props = {
   profile: VoiceProfile | null;
@@ -28,6 +37,16 @@ type Props = {
   onDeleteHistoryEntry: (id: string) => void;
   onClearHistory: () => void;
 };
+
+// Icon language matches CopyButton: stroke-only, round caps/joins, currentColor.
+function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="10" cy="10" r="2.6" />
+      <path d="M10 3v2.1M10 14.9V17M3 10h2.1M14.9 10H17M5.3 5.3l1.5 1.5M13.2 13.2l1.5 1.5M5.3 14.7l1.5-1.5M13.2 6.8l1.5-1.5" />
+    </svg>
+  );
+}
 
 export function MainPanel({
   profile,
@@ -65,7 +84,17 @@ export function MainPanel({
   const skeletonCount = effectiveOptions.variantCount ?? 1;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isCustomized = optionsOverride !== undefined;
-  const [activeTab, setActiveTab] = useState<"compose" | "history">("compose");
+  const [activeTab, setActiveTab] = useState<"compose" | "history" | "savings">("compose");
+
+  // PROTOTYPE (#90) — mocked savings tab, variants A/B/C.
+  const savingsVariant = useSavingsUIVariant();
+  const { entries: mockSavingsEntries, toggleEmpty } = useMockSavingsEntries();
+  const showSavingsTab = savingsVariant !== "current";
+
+  // PROTOTYPE (#91) — mock cache-hit badge toggle. Real implementation reads
+  // `run.dedupeHit` (added to RunStatus's "success" case, set by runAction's
+  // cache check per #86) instead of this local mock state.
+  const [mockDedupeHit, setMockDedupeHit] = useState(false);
 
   return (
     <main className="main">
@@ -109,14 +138,29 @@ export function MainPanel({
             >
               History
             </button>
+            {showSavingsTab && (
+              <button
+                className={`mode-btn${activeTab === "savings" ? " active" : ""}`}
+                aria-pressed={activeTab === "savings"}
+                onClick={() => setActiveTab("savings")}
+              >
+                Savings
+              </button>
+            )}
           </div>
           <button className="settings-btn" title="Settings" aria-label="Settings" onClick={onOpenSettings}>
-            ⚙
+            <SettingsIcon />
           </button>
         </div>
       </div>
 
-      {activeTab === "history" ? (
+      {activeTab === "savings" ? (
+        <>
+          {savingsVariant === "A" && <SavingsPanelA entries={mockSavingsEntries} />}
+          {savingsVariant === "B" && <SavingsPanelB entries={mockSavingsEntries} />}
+          {savingsVariant === "C" && <SavingsPanelC entries={mockSavingsEntries} />}
+        </>
+      ) : activeTab === "history" ? (
         <HistoryView
           history={history}
           onRerun={(entry) => {
@@ -161,6 +205,21 @@ export function MainPanel({
               Result
             </p>
             <div className="toolbar-right">
+              {!isLoading && run.status === "success" && mockDedupeHit && (
+                <span className="cache-hit-badge" title="Served from cache — no API call made">
+                  ⚡ cached
+                </span>
+              )}
+              {!import.meta.env.PROD && (
+                <button
+                  type="button"
+                  className="proto-cache-toggle"
+                  onClick={() => setMockDedupeHit((v) => !v)}
+                  title="PROTOTYPE (#91) — toggle mock cache-hit badge"
+                >
+                  {mockDedupeHit ? "◆" : "◇"}
+                </button>
+              )}
               {isRewrite && (
                 <div className="view-toggle" role="group" aria-label="View">
                   <button
@@ -254,6 +313,9 @@ export function MainPanel({
         </button>
       </div>
         </>
+      )}
+      {showSavingsTab && (
+        <SavingsVariantSwitcher current={savingsVariant} entries={mockSavingsEntries} onToggleEmpty={toggleEmpty} />
       )}
     </main>
   );

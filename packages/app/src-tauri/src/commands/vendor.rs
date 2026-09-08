@@ -1,5 +1,5 @@
 // The two AI vendors Voicecraft's Settings UI supports (#42), shared by
-// `secrets` (per-vendor Keychain account) and `provider` (request/response
+// `secrets` (per-vendor stored key) and `provider` (request/response
 // shape) so both stay in lock-step through one parse point instead of
 // independent string comparisons that could drift out of sync.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

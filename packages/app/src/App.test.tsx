@@ -16,7 +16,9 @@ beforeEach(() => {
     if (cmd === "write_profiles_file") return undefined;
     if (cmd === "update_last_used_profile_tray") return undefined;
     if (cmd === "get_api_key") return null;
-    if (cmd === "call_provider") return "Hey — following up. Thanks!";
+    if (cmd === "call_provider") {
+      return { text: "Hey — following up. Thanks!", usage: { inputTokens: 0, outputTokens: 0 } };
+    }
     if (cmd === "read_history_file") return "";
     if (cmd === "append_history_entry") return undefined;
     if (cmd === "delete_history_entry") return undefined;

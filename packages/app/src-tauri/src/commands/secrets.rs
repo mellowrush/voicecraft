@@ -1,127 +1,151 @@
-// API key storage — the `keyring` crate backed by the native macOS Keychain.
-// Not Stronghold: it doesn't touch the OS keychain and is being removed in
-// Tauri v3 (see map #13, issue #14).
+// API key storage — a plain JSON file in the app's own data directory,
+// chmod 600. This app is single-user/local-only, so OS keychain integration
+// (previously used here, see git history) was pure complexity for no real
+// threat model: anyone with access to this machine already has access to
+// this file's plaintext-equivalent keychain-derived contents anyway.
+
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+
+use serde::{Deserialize, Serialize};
+use tauri::Manager;
 
 use super::vendor::Vendor;
 
-const SERVICE: &str = "com.voicecraft.app";
-// Pre-#42 single-provider installs stored their (necessarily OpenAI, the
-// only provider that existed then) key under this account. Kept around as a
-// read-only fallback so upgrading doesn't silently lose an already-working
-// key.
-const LEGACY_SINGLE_VENDOR_ACCOUNT: &str = "provider-api-key";
+const KEYS_FILE: &str = "api-keys.json";
 
-fn account_for(vendor: Vendor) -> String {
-    format!("api-key-{}", vendor.as_str())
+#[derive(Debug, Default, Serialize, Deserialize)]
+struct StoredKeys(HashMap<String, String>);
+
+fn keys_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    Ok(dir.join(KEYS_FILE))
 }
 
-fn read_account(service: &str, account: &str) -> Result<Option<String>, String> {
-    let entry = keyring::Entry::new(service, account).map_err(|e| e.to_string())?;
-    match entry.get_password() {
-        Ok(password) => Ok(Some(password)),
-        Err(keyring::Error::NoEntry) => Ok(None),
-        Err(e) => Err(e.to_string()),
+fn read_keys(path: &Path) -> Result<StoredKeys, String> {
+    if !path.exists() {
+        return Ok(StoredKeys::default());
     }
+    let contents = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    serde_json::from_str(&contents).map_err(|e| e.to_string())
 }
 
-// `service` is a parameter (not the `SERVICE` const directly) so tests can
-// point this at a dedicated test service instead of the real app's Keychain
-// service — the legacy-account fallback in particular would otherwise read
-// whatever real single-key install the machine running the tests has.
-fn get_api_key_for_service(service: &str, vendor: Vendor) -> Result<Option<String>, String> {
-    if let Some(key) = read_account(service, &account_for(vendor))? {
-        return Ok(Some(key));
+fn write_keys(path: &Path, keys: &StoredKeys) -> Result<(), String> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
     }
-    if vendor == Vendor::OpenAi {
-        return read_account(service, LEGACY_SINGLE_VENDOR_ACCOUNT);
+    let contents = serde_json::to_string_pretty(keys).map_err(|e| e.to_string())?;
+    std::fs::write(path, contents).map_err(|e| e.to_string())?;
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o600)).map_err(|e| e.to_string())?;
     }
-    Ok(None)
+
+    Ok(())
 }
 
-fn set_api_key_for_service(service: &str, vendor: Vendor, key: &str) -> Result<(), String> {
-    let entry = keyring::Entry::new(service, &account_for(vendor)).map_err(|e| e.to_string())?;
-    entry.set_password(key).map_err(|e| e.to_string())
+fn get_api_key_from(path: &Path, vendor: Vendor) -> Result<Option<String>, String> {
+    Ok(read_keys(path)?.0.get(vendor.as_str()).cloned())
 }
 
-pub fn get_api_key_internal(vendor: Vendor) -> Result<Option<String>, String> {
-    get_api_key_for_service(SERVICE, vendor)
+fn set_api_key_at(path: &Path, vendor: Vendor, key: &str) -> Result<(), String> {
+    let mut keys = read_keys(path)?;
+    keys.0.insert(vendor.as_str().to_string(), key.to_string());
+    write_keys(path, &keys)
 }
 
-pub fn set_api_key_internal(vendor: Vendor, key: &str) -> Result<(), String> {
-    set_api_key_for_service(SERVICE, vendor, key)
+pub fn get_api_key_internal(app: &tauri::AppHandle, vendor: Vendor) -> Result<Option<String>, String> {
+    get_api_key_from(&keys_path(app)?, vendor)
+}
+
+pub fn set_api_key_internal(app: &tauri::AppHandle, vendor: Vendor, key: &str) -> Result<(), String> {
+    set_api_key_at(&keys_path(app)?, vendor, key)
 }
 
 #[tauri::command]
-pub fn get_api_key(vendor: String) -> Result<Option<String>, String> {
-    get_api_key_internal(Vendor::parse(&vendor)?)
+pub fn get_api_key(app: tauri::AppHandle, vendor: String) -> Result<Option<String>, String> {
+    get_api_key_internal(&app, Vendor::parse(&vendor)?)
 }
 
 #[tauri::command]
-pub fn set_api_key(vendor: String, key: String) -> Result<(), String> {
-    set_api_key_internal(Vendor::parse(&vendor)?, &key)
+pub fn set_api_key(app: tauri::AppHandle, vendor: String, key: String) -> Result<(), String> {
+    set_api_key_internal(&app, Vendor::parse(&vendor)?, &key)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // Round-trips against the real macOS Keychain under a dedicated test
-    // service/account, cleaned up afterwards. Same-process reads of an
-    // entry this process just wrote don't trigger a Keychain access prompt.
-    #[test]
-    fn round_trips_through_the_keychain() {
-        let entry = keyring::Entry::new("com.voicecraft.app.test", "round-trip").unwrap();
-        entry.set_password("secret-value").unwrap();
-
-        assert_eq!(entry.get_password().unwrap(), "secret-value");
-
-        entry.delete_credential().unwrap();
-        assert!(matches!(entry.get_password(), Err(keyring::Error::NoEntry)));
+    fn temp_keys_path() -> (tempfile::TempDir, PathBuf) {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(KEYS_FILE);
+        (dir, path)
     }
 
     #[test]
-    fn each_vendor_round_trips_under_its_own_account() {
-        let service = "com.voicecraft.app.test.per-vendor";
-        set_api_key_for_service(service, Vendor::OpenAi, "openai-secret").unwrap();
-        set_api_key_for_service(service, Vendor::Anthropic, "anthropic-secret").unwrap();
+    fn round_trips_a_key_through_the_file() {
+        let (_dir, path) = temp_keys_path();
 
-        assert_eq!(get_api_key_for_service(service, Vendor::OpenAi).unwrap(), Some("openai-secret".to_string()));
-        assert_eq!(
-            get_api_key_for_service(service, Vendor::Anthropic).unwrap(),
-            Some("anthropic-secret".to_string())
-        );
-
-        keyring::Entry::new(service, &account_for(Vendor::OpenAi)).unwrap().delete_credential().unwrap();
-        keyring::Entry::new(service, &account_for(Vendor::Anthropic)).unwrap().delete_credential().unwrap();
+        set_api_key_at(&path, Vendor::OpenAi, "sk-test-123").unwrap();
+        assert_eq!(get_api_key_from(&path, Vendor::OpenAi).unwrap(), Some("sk-test-123".to_string()));
     }
 
     #[test]
-    fn falls_back_to_the_legacy_single_vendor_account_for_openai_only() {
-        let service = "com.voicecraft.app.test.legacy-fallback";
-        let legacy = keyring::Entry::new(service, LEGACY_SINGLE_VENDOR_ACCOUNT).unwrap();
-        legacy.set_password("pre-#42-key").unwrap();
+    fn each_vendor_round_trips_under_its_own_entry() {
+        let (_dir, path) = temp_keys_path();
 
-        assert_eq!(get_api_key_for_service(service, Vendor::OpenAi).unwrap(), Some("pre-#42-key".to_string()));
-        assert_eq!(get_api_key_for_service(service, Vendor::Anthropic).unwrap(), None);
+        set_api_key_at(&path, Vendor::OpenAi, "openai-secret").unwrap();
+        set_api_key_at(&path, Vendor::Anthropic, "anthropic-secret").unwrap();
 
-        legacy.delete_credential().unwrap();
+        assert_eq!(get_api_key_from(&path, Vendor::OpenAi).unwrap(), Some("openai-secret".to_string()));
+        assert_eq!(get_api_key_from(&path, Vendor::Anthropic).unwrap(), Some("anthropic-secret".to_string()));
     }
 
     #[test]
-    fn a_new_per_vendor_key_takes_precedence_over_the_legacy_account() {
-        let service = "com.voicecraft.app.test.legacy-precedence";
-        let legacy = keyring::Entry::new(service, LEGACY_SINGLE_VENDOR_ACCOUNT).unwrap();
-        legacy.set_password("old-key").unwrap();
-        set_api_key_for_service(service, Vendor::OpenAi, "new-key").unwrap();
+    fn returns_none_for_a_vendor_with_no_stored_key() {
+        let (_dir, path) = temp_keys_path();
 
-        assert_eq!(get_api_key_for_service(service, Vendor::OpenAi).unwrap(), Some("new-key".to_string()));
+        set_api_key_at(&path, Vendor::OpenAi, "openai-secret").unwrap();
 
-        legacy.delete_credential().unwrap();
-        keyring::Entry::new(service, &account_for(Vendor::OpenAi)).unwrap().delete_credential().unwrap();
+        assert_eq!(get_api_key_from(&path, Vendor::Anthropic).unwrap(), None);
     }
 
     #[test]
-    fn get_api_key_rejects_an_unsupported_vendor() {
-        assert_eq!(get_api_key("cohere".to_string()), Err("Unsupported vendor: cohere".to_string()));
+    fn setting_a_key_again_overwrites_the_previous_value() {
+        let (_dir, path) = temp_keys_path();
+
+        set_api_key_at(&path, Vendor::OpenAi, "old-key").unwrap();
+        set_api_key_at(&path, Vendor::OpenAi, "new-key").unwrap();
+
+        assert_eq!(get_api_key_from(&path, Vendor::OpenAi).unwrap(), Some("new-key".to_string()));
+    }
+
+    #[test]
+    fn reopening_the_same_file_sees_previously_stored_keys() {
+        let (_dir, path) = temp_keys_path();
+
+        set_api_key_at(&path, Vendor::OpenAi, "persisted-key").unwrap();
+
+        assert_eq!(get_api_key_from(&path, Vendor::OpenAi).unwrap(), Some("persisted-key".to_string()));
+    }
+
+    #[test]
+    fn returns_none_when_the_file_does_not_exist_yet() {
+        let (_dir, path) = temp_keys_path();
+        assert_eq!(get_api_key_from(&path, Vendor::OpenAi).unwrap(), None);
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn writes_the_file_with_owner_only_permissions() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let (_dir, path) = temp_keys_path();
+        set_api_key_at(&path, Vendor::OpenAi, "sk-test-123").unwrap();
+
+        let mode = std::fs::metadata(&path).unwrap().permissions().mode() & 0o777;
+        assert_eq!(mode, 0o600);
     }
 }

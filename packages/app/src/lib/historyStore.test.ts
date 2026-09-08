@@ -10,6 +10,9 @@ const validEntry: HistoryEntry = {
   mode: "rewrite",
   inputText: "We should consider the proposal.",
   variants: ["When the vendor pitched synergy, I nearly spilled my drink."],
+  usage: { inputTokens: 420, outputTokens: 180 },
+  dedupeHit: false,
+  compressed: false,
 };
 
 describe("parseHistoryFile", () => {
@@ -42,6 +45,18 @@ describe("parseHistoryFile", () => {
   it("ignores blank lines", () => {
     const raw = `${JSON.stringify(validEntry)}\n\n\n`;
     expect(parseHistoryFile(raw)).toHaveLength(1);
+  });
+
+  it("backfills usage/dedupeHit/compressed for a pre-#94 entry rather than dropping it", () => {
+    const { usage: _usage, dedupeHit: _dedupeHit, compressed: _compressed, ...legacyEntry } = validEntry;
+    const raw = `${JSON.stringify(legacyEntry)}\n`;
+    const entries = parseHistoryFile(raw);
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({
+      usage: { inputTokens: 0, outputTokens: 0 },
+      dedupeHit: false,
+      compressed: false,
+    });
   });
 });
 

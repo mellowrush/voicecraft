@@ -125,10 +125,18 @@ button:focus-visible {
   justify-content: center;
   transition: transform var(--duration-spring) var(--ease-spring), background 0.15s var(--ease), border-color 0.15s var(--ease), color 0.15s var(--ease);
 }
+.new-btn,
+.settings-btn {
+  padding: 0;
+}
+.new-btn svg,
+.settings-btn svg {
+  width: 14px;
+  height: 14px;
+}
 .new-btn {
   background: var(--color-stamp-red);
   color: white;
-  font-size: 15px;
 }
 .new-btn:hover {
   background: var(--color-stamp-red-deep);
@@ -223,15 +231,21 @@ button:focus-visible {
 }
 .edit-affordance {
   opacity: 0;
-  font-size: 12px;
   color: var(--color-graphite);
   flex-shrink: 0;
   background: transparent;
   border: none;
-  padding: 2px;
+  padding: 3px;
   cursor: pointer;
   border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: opacity 0.15s var(--ease);
+}
+.edit-affordance svg {
+  width: 12px;
+  height: 12px;
 }
 .profile-item:hover .edit-affordance,
 .edit-affordance:focus-visible {
@@ -393,6 +407,26 @@ textarea:focus {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+/* PROTOTYPE (#91) — cache-hit badge. Real version drops the mock toggle. */
+.cache-hit-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-mint-pulse);
+  color: var(--color-ink);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+}
+.proto-cache-toggle {
+  border: none;
+  background: transparent;
+  color: var(--color-graphite);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
 }
 .view-toggle {
   display: flex;
@@ -754,9 +788,15 @@ body:has(.hud),
 body:has(.onboarding) {
   background: transparent;
 }
+/* Padding, not margin — margin here would collapse through #root/body
+   (neither has a border/padding to contain it), silently inflating the
+   fixed 320x200, non-resizable HUD window's real content height past
+   its bounds, the same trap the onboarding window hit (see below). */
+body:has(.hud) {
+  padding: 8px;
+}
 .hud {
-  width: calc(100% - 16px);
-  margin: 8px;
+  width: 100%;
   background: var(--color-pure-white);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-xl);
@@ -782,13 +822,20 @@ body:has(.onboarding) {
   line-height: 1.55;
   color: var(--color-ink);
   min-height: 54px;
+  /* Safety net: the window is fixed-size and non-resizable (see body:has(.hud)
+     above), so a longer rewrite result scrolls within its own bounded box
+     rather than clipping off the bottom of the window. */
+  max-height: 88px;
+  overflow-y: auto;
 }
 .hud-result {
   margin: 0;
 }
 .hud-error {
   margin: 0;
-  color: var(--color-graphite);
+  /* Matches result-error/settings-error — an error needs to read as an
+     error at a glance in a floating HUD, not blend in as quiet gray text. */
+  color: var(--color-error);
 }
 .hud-skeleton {
   display: flex;
@@ -1095,10 +1142,14 @@ body:has(.onboarding) {
   background: none;
   border: none;
   color: var(--color-graphite);
-  font-size: 16px;
-  line-height: 1;
   cursor: pointer;
-  padding: 2px 6px;
+  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+}
+.history-card-delete svg {
+  width: 13px;
+  height: 13px;
 }
 .history-card-delete:hover {
   color: var(--color-error);

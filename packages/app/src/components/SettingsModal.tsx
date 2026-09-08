@@ -69,7 +69,7 @@ export function SettingsModal({ open, activeVendor, onVendorChange, onClose }: P
       setKey("");
       setSaved(true);
     } catch {
-      setError("Couldn't save the key to Keychain — try again.");
+      setError("Couldn't save the key — try again.");
     }
   }
 
@@ -115,7 +115,7 @@ export function SettingsModal({ open, activeVendor, onVendorChange, onClose }: P
               : `Enter your ${vendorLabel(viewingVendor)} API key`
           }
         />
-        {saved && <p className="settings-saved">Saved to Keychain.</p>}
+        {saved && <p className="settings-saved">Saved.</p>}
         {error && <p className="settings-error">{error}</p>}
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>

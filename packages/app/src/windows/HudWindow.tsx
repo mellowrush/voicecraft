@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { createEngine, type EngineError, type VoiceProfile } from "@voicecraft/core";
@@ -21,8 +21,18 @@ export function HudWindow() {
   const [state, setState] = useState<HudState | null>(null);
   const engine = useMemo(() => createEngine({ provider: tauriProvider }), []);
 
+  // A ref (not `state` in the effect's deps) so the listener always sees the
+  // latest status without re-subscribing on every state change.
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   useEffect(() => {
     const unlisten = listen<HotkeySelectionPayload>("hotkey://selection", async (event) => {
+      // Drop a duplicate hotkey trigger while a call is already in flight
+      // (#88) — the loading UI already communicates "busy", so silently
+      // absorbing the repeat is correct, not a second concurrent generate().
+      if (stateRef.current?.status === "loading") return;
+
       const { text, profileId } = event.payload;
 
       let profiles: VoiceProfile[] = [];
