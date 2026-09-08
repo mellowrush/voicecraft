@@ -352,7 +352,12 @@ describe("useVoicecraftApp", () => {
       const { result } = renderHook(() => useVoicecraftApp({ engine, readFile, writeFile, ...historyStore }));
 
       await waitFor(() => expect(result.current.history).toHaveLength(1));
-      expect(result.current.history[0]).toEqual(entry);
+      expect(result.current.history[0]).toEqual({
+        ...entry,
+        usage: { inputTokens: 0, outputTokens: 0 },
+        dedupeHit: false,
+        compressed: false,
+      });
     });
 
     it("appends a new entry to history after a successful generation", async () => {

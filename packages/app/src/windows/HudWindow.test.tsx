@@ -75,10 +75,10 @@ describe("HudWindow", () => {
   });
 
   it("drops a duplicate hotkey trigger while a call is already in flight (#88)", async () => {
-    let resolveCallProvider: (text: string) => void = () => {};
+    let resolveCallProvider: (result: { text: string; usage: unknown }) => void = () => {};
     invokeMock.mockImplementation(async (cmd: string) => {
       if (cmd === "read_profiles_file") return JSON.stringify({ profiles: [PROFILE], lastUsedProfileId: "p1" });
-      if (cmd === "call_provider") return new Promise<string>((resolve) => (resolveCallProvider = resolve));
+      if (cmd === "call_provider") return new Promise((resolve) => (resolveCallProvider = resolve));
       throw new Error(`unexpected invoke: ${cmd}`);
     });
 
@@ -91,7 +91,7 @@ describe("HudWindow", () => {
     // Second trigger while the first is still in flight — must not start a
     // second concurrent call_provider invocation.
     selectionHandler({ payload: { text: "second", profileId: "p1" } });
-    resolveCallProvider("Rewritten text");
+    resolveCallProvider({ text: "Rewritten text", usage: { inputTokens: 0, outputTokens: 0 } });
     await waitFor(() => expect(screen.getByText("Rewritten text")).toBeInTheDocument());
 
     expect(invokeMock.mock.calls.filter(([cmd]) => cmd === "call_provider")).toHaveLength(1);
