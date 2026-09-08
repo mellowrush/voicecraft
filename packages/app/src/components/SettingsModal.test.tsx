@@ -78,6 +78,6 @@ describe("SettingsModal", () => {
       expect(invokeMock).toHaveBeenCalledWith("set_api_key", { vendor: "anthropic", key: "sk-ant-secret" }),
     );
     expect(onVendorChange).toHaveBeenCalledWith("anthropic");
-    expect(await screen.findByText("Saved to Keychain.")).toBeInTheDocument();
+    expect(await screen.findByText("Saved.")).toBeInTheDocument();
   });
 });

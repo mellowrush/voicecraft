@@ -1,5 +1,5 @@
 // Proxies the actual HTTP call to the user-selected provider (#42: OpenAI or
-// Anthropic) — the API key is read from Keychain and attached here, in Rust,
+// Anthropic) — the API key is read from disk and attached here, in Rust,
 // so it never enters the webview/JS context (see issue #14's decision).
 
 use serde::Serialize;
@@ -141,8 +141,7 @@ pub async fn call_provider(
 ) -> Result<ProviderResponse, ProviderCallError> {
     let vendor = Vendor::parse(&vendor).map_err(provider_error)?;
 
-    // Native Keychain access can block on a first-time OS permission prompt —
-    // run it off the async executor thread so it doesn't stall other commands.
+    // File I/O off the async executor thread so it doesn't stall other commands.
     let api_key = tauri::async_runtime::spawn_blocking(move || get_api_key_internal(&app, vendor))
         .await
         .map_err(|e| provider_error(e.to_string()))?
